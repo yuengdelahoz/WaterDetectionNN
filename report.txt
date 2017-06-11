@@ -1,0 +1,161 @@
+11c11,16
+< import cv2
+---
+> 
+> def timing(f,*args):
+> 	time1 = time.time()
+> 	f(*args)
+> 	time2 = time.time()
+> 	print('{0} function took {1:0.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
+17,21d21
+< 	
+< 	def initialize(self):
+< 		self.x = tf.placeholder(tf.float32, shape =[None,500,500,3],name='input_images')
+< 		self.y = tf.placeholder(tf.float32, shape = [None,1250],name='label_images')
+< 		self.keep_prob = tf.placeholder(tf.float32,name='keep_prob')
+22a23,26
+> 	def initialize(self):
+> 		self.x = tf.placeholder(tf.float32, shape =[None,500,500,3])
+> 		self.y = tf.placeholder(tf.float32, shape = [None,1250])
+> 		self.keep_prob = tf.placeholder(tf.float32)
+27,31c31,32
+< 		L1 = Layer().Convolutional([4,4,3,3],self.x)# L1.output.shape = [?,250,250,7]
+< 		L_drop = Layer().Dropout(L1.output,self.keep_prob)
+< 		shape = 250*250*3
+< 		L_out = Layer(act_func = 'sigmoid').Dense([shape,1250],tf.reshape(L_drop.output,[-1,shape]),flag=True)
+< 		self.output = L_out.output
+---
+> 		L1 = Layer().Dense([500*500*3,1250],tf.reshape(self.x,[-1,500*500*3]),internal=True)
+> 		self.output = L1.output
+36,41c37,41
+< 		L1 = Layer(act_func = 'tanh').Convolutional([4,4,3,7],self.x,k_pool=1)# L1.output.shape = [?,500,500,7]
+< 		L2 = Layer(act_func = 'tanh').Convolutional([5,5,7,4],L1.output)# L2.output.shape = [?,250,250,10]
+< 		L3 = Layer(act_func = 'tanh').Convolutional([6,6,4,2],L2.output)# L3.output.shape = [?,125,125,7]
+< 		L4 = Layer(act_func = 'tanh').Convolutional([3,3,2,3],L3.output) # L4.output.shape = [?,63,63,3]
+< 		L_drop = Layer().Dropout(L4.output,self.keep_prob)
+< 		L_out = Layer(act_func = 'sigmoid').Dense([63*63*3,1250],tf.reshape(L_drop.output,[-1,63*63*3]),flag=True)
+---
+> 		L1 = Layer(act_func = 'tanh').Convolutional([32,32,3,7],self.x,k_pool=1)# L1.output.shape = [?,500,500,7]
+> 		L2 = Layer(act_func = 'tanh').Convolutional([18,18,7,10],L1.output)# L2.output.shape = [?,250,250,10]
+> 		L3 = Layer(act_func = 'tanh').Convolutional([20,20,10,5],L2.output)# L3.output.shape = [?,125,125,7]
+> 		L4 = Layer(act_func = 'tanh').Convolutional([7,7,5,3],L3.output) # L4.output.shape = [?,63,63,3]
+> 		L_out = Layer(act_func = 'sigmoid').Dense([63*63*3,1250],tf.reshape(L4.output,[-1,63*63*3]),internal=True)
+48,51c48,51
+< 		L2 = Layer().Convolutional([5,5,3,3],L1.output)# L2.output.shape = [?,125,125,10]
+< 		L3 = Layer().Convolutional([5,5,3,2],L2.output)# L3.output.shape = [?,63,63,7]
+< 		L_drop = Layer().Dropout(L3.output,self.keep_prob)
+< 		L_out = Layer(act_func='sigmoid').Dense([63*63*2,1250],tf.reshape(L_drop.output,[-1,63*63*2]))
+---
+> 		L2 = Layer().Convolutional([18,18,3,3],L1.output)# L2.output.shape = [?,125,250,10]
+> 		L3 = Layer().Convolutional([20,20,3,2],L2.output)# L3.output.shape = [?,63,125,7]
+> 		L4 = Layer().Convolutional([7,7,2,3],L3.output) # L4.output.shape = [?,32,63,3]
+> 		L_out = Layer(act_func='sigmoid').Dense([32*32*3,1250],tf.reshape(L4.output,[-1,32*32*3]))
+63c63,64
+< 		L_out = Layer(act_func='sigmoid').Dense([32*32*3,1250],tf.reshape(L_drop.output,[-1,32*32*3]))
+---
+> 		LFC = Layer().Dense([32*32*3,2000],tf.reshape(L_drop.output,[-1,32*32*3]),internal=True)
+> 		L_out = Layer(act_func='sigmoid').Dense([2000,1250],LFC.output,internal=True)
+69c70
+< 		L1 = Layer().Convolutional([10,10,3,3],self.x,k_pool=1) # output.shape = [?,500,500,3]
+---
+> 		L1 = Layer().Convolutional([4,4,3,3],self.x,k_pool=1) # output.shape = [?,500,500,3]
+75c76
+< 		L7 = Layer().Convolutional([4,4,2,3],L6.output) # output.shape = [?,32,32,3]
+---
+> 		L7 = Layer().Convolutional([10,10,2,3],L6.output) # output.shape = [?,32,32,3]
+77,78c78,79
+< 		LFC = Layer().Dense([32*32*3,2000],tf.reshape(L_drop.output,[-1,32*32*3]),flag=True)
+< 		L_out = Layer(act_func='sigmoid').Dense([2000,1250],LFC.output)
+---
+> 		LFC = Layer().Dense([32*32*3,2000],tf.reshape(L_drop.output,[-1,32*32*3]),internal=True)
+> 		L_out = Layer(act_func='sigmoid').Dense([2000,1250],LFC.output,internal=True)
+81,83c82,85
+< 	def train(self,reps=100000):
+< 		print(reps)
+< 		test_image = np.array(cv2.imread("image-0.jpg"),ndmin=4)
+---
+> 	def train(self,reps=10000):
+> 		# Clearing operational folders
+> 		script.clearFolder('FloorDetectionNN/Dataset/Results/')
+> 		script.clearFolder('FloorDetectionNN/Dataset/PAINTED-IMAGES')
+90,94c92,94
+< 		train_step = tf.train.AdamOptimizer(1e-10).minimize(loss)
+< 
+< 		# init = tf.initialize_all_variables()
+< 		# init = tf.global_variables_initializer()
+< 		
+---
+> 		train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+> 		init = tf.global_variables_initializer()
+> 		# Add ops to save and restore all the variables.
+100,102c100,102
+< 			# sess.run(init)
+< 			saver.restore(sess,'ObjectOnFloorDetectionNN/Network/Model/model')
+< 			print("Model restored.")
+---
+> 			sess.run(init)
+> 			# saver.restore(sess,'FloorDetectionNN/Network/Model/model')
+> 			# print("Model restored.")
+118d117
+< 
+127c126
+< 						save_path = saver.save(sess,'ObjectOnFloorDetectionNN/Network/Model/model')
+---
+> 						save_path = saver.save(sess,'FloorDetectionNN/Network/Model/model')
+134a134,137
+> 						# print("Results[0]", results[0])
+> 						# print("Ground Truth [0]", labelBatch[0])
+> 						# print("Results[1]", results[1])
+> 						# print("Ground Truth"[1], labelBatch[1])
+136c139,144
+< 						paintBatchThread = myThread(batch[0],results).start()
+---
+> 						np.save('FloorDetectionNN/Dataset/Results/input',batch[0])
+> 						np.save('FloorDetectionNN/Dataset/Results/GT',batch[1])
+> 						np.save('FloorDetectionNN/Dataset/Results/output',results)
+> 						np.save('FloorDetectionNN/Dataset/Results/lossFunc',lossFunc)
+> 						paintBatchThread = myThread(1, "Thread-1").start()
+> 
+141c149
+< 			save_path = saver.save(sess,'ObjectOnFloorDetectionNN/Network/Model/model')
+---
+> 			save_path = saver.save(sess,'FloorDetectionNN/Network/Model/model')
+143c151
+< 			np.save('ObjectOnFloorDetectionNN/Dataset/Results/lossFunc',lossFunc)
+---
+> 			np.save('FloorDetectionNN/Dataset/Results/lossFunc',lossFunc)
+147,152c155,156
+< 		saver = tf.train.import_meta_graph('ObjectOnFloorDetectionNN/Network/Model/model.meta')
+< 		g = tf.get_default_graph()
+< 		x = g.get_tensor_by_name("input_images:0")
+< 		y = g.get_tensor_by_name("label_images:0")
+< 		keep_prob = g.get_tensor_by_name("keep_prob:0")
+< 		output = tf.get_collection("output")[0]
+---
+> 		saver = tf.train.Saver(write_version=tf.train.SaverDef.V2)
+> 		print('Evaluation Process started')
+155c159
+< 				saver.restore(sess,'ObjectOnFloorDetectionNN/Network/Model/model')
+---
+> 				saver.restore(sess,'FloorDetectionNN/Network/Model/model')
+163c167
+< 					results = sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0})
+---
+> 					results = sess.run(self.output,feed_dict={self.x:testImages, self.y: testLabels, self.keep_prob:1.0})
+169,184d172
+< 	
+< 	def run_inference_on_image(self,input_image):
+< 		image = np.array(input_image,ndmin=4)
+< 		saver = tf.train.import_meta_graph('ObjectOnFloorDetectionNN/Network/Model/model.meta')
+< 		g = tf.get_default_graph()
+< 		x = g.get_tensor_by_name("input_images:0")
+< 		keep_prob = g.get_tensor_by_name("keep_prob:0")
+< 		output = tf.get_collection("output")[0]
+< 		with tf.Session() as sess:
+< 			saver.restore(sess,'ObjectOnFloorDetectionNN/Network/Model/model')
+< 			result = sess.run(output,feed_dict={x:image,keep_prob:1.0})
+< 			print (result)
+< 			paintedImg = script.paintOrig(result.ravel(),input_image)
+< 			return paintedImg
+< 
+< 
