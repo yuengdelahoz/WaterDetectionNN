@@ -12,7 +12,7 @@ def clearFolder(path):
         if jpg_file.name.endswith('.jpg')!=-1:
             os.remove(jpg_file.path)
 
-def detectEdges():
+def detectEdgesCanny():
     clearFolder('EDGES')
     for file in os.scandir('INPUT/'):
         if file.name.endswith('.jpg'):
@@ -20,6 +20,16 @@ def detectEdges():
             edgeimg = cv2.Canny(img, 50, 80)
             cv2.imwrite('EDGES/'+file.name,edgeimg)
             print('Edge detection finished for',file.name)
+
+def detectEdgesLaplacian():
+    clearFolder('EDGES')
+    for file in os.scandir('INPUT/'):
+        if file.name.endswith('.jpg'):
+            img = cv2.imread(file.path)
+            edgeimg = cv2.Laplacian(img, cv2.CV_64F, ksize = 3)
+            cv2.imwrite('EDGES/'+file.name,edgeimg)
+            print('Edge detection finished for',file.name)
+
 
 def resizeImages():
     for file in os.scandir('INPUT/'):
