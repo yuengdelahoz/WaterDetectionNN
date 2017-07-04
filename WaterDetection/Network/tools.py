@@ -60,7 +60,7 @@ def calculateMetrics(GroundTruthBatch, OutputBatch):
 				FP += 1
 			elif v == 2:
 				FN +=1
-		# print ('TP',TP,'TN',TN,'FP',FP,'FN',FN)
+		print ('TP',TP,'TN',TN,'FP',FP,'FN',FN)
 		acc = (TP + TN)/(TP + TN + FP +FN)
 		if TP + FP !=0:
 			prec = TP/(TP + FP)

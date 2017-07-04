@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import collections
 
-Datasets = collections.namedtuple('Datasets', ['train', 'test'])
+Datasets = collections.namedtuple('Datasets', ['train', 'test', 'validation'])
 
 class Dataset:
 	def __init__(self,images,setName):
@@ -56,30 +56,38 @@ class Dataset:
 
 
 def readDataSets():
-	path = os.path.dirname(__file__)
-	trainingImages = np.load(path + '/npyFiles/trainingImages.npy')
-	np.random.shuffle(trainingImages)
-	testingImages = np.load(path + '/npyFiles/testingImages.npy')
-	np.random.shuffle(testingImages)
-	train = Dataset(trainingImages,'Training set')
-	test = Dataset(testingImages,'Testing set')
-	return Datasets(train=train, test=test)
+    path = os.path.dirname(__file__)
+    trainingImages = np.load(path + '/npyFiles/trainingImages.npy')
+    np.random.shuffle(trainingImages)
+    testingImages = np.load(path + '/npyFiles/testingImages.npy')
+    np.random.shuffle(testingImages)
+    validationImages = np.load(path + '/npyFiles/validationImages.npy')
+    np.random.shuffle(validationImages)
+    train = Dataset(trainingImages,'Training set')
+    test = Dataset(testingImages,'Testing set')
+    validation = Dataset(validationImages,'Validation set')
+    return Datasets(train=train, test=test, validation=validation)
 
 def createNPYfiles():
-	print('Creating npy files')
-	instances = os.listdir('INPUT/')
-	np.random.shuffle(instances)
-	num_Of_Pics = len(instances)
-	idx = int(num_Of_Pics*0.8)
+    print('Creating npy files')
+    instances = os.listdir('INPUT/')
+    np.random.shuffle(instances)
+    num_Of_Pics = len(instances)
+    idx = int(num_Of_Pics*0.7)
 
-	trainingImages = instances[0:idx]
-	testingImages = instances[idx:]
+    trainingImages = instances[0:idx]
+    testingImages = instances[idx:]
+    idx = int(len(testingImages)*(1.0/6.0))
+    validationImages = testingImages[0:idx]
+    testingImages = testingImages[idx:]
 
-	print("Training Images")
-	np.save('npyFiles/trainingImages',trainingImages)
-	print("Testing Images")
-	np.save('npyFiles/testingImages',testingImages)
-	print('Done')
+    print("Training Images")
+    np.save('npyFiles/trainingImages',trainingImages)
+    print("Testing Images")
+    np.save('npyFiles/testingImages',testingImages)
+    print("Validation Images")
+    np.save('npyFiles/validationImages',validationImages)
+    print('Done')
 
 
 if __name__ == '__main__':

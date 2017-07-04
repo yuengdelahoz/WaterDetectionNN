@@ -12,6 +12,15 @@ def clearFolder(path):
         if jpg_file.name.endswith('.jpg')!=-1:
             os.remove(jpg_file.path)
 
+def detectEdges():
+    clearFolder('EDGES')
+    for file in os.scandir('INPUT/'):
+        if file.name.endswith('.jpg'):
+            img = cv2.imread(file.path)
+            edgeimg = cv2.Canny(img, 50, 80)
+            cv2.imwrite('EDGES/'+file.name,edgeimg)
+            print('Edge detection finished for',file.name)
+
 def resizeImages():
     for file in os.scandir('INPUT/'):
         if file.name.endswith('.jpg'):
@@ -38,14 +47,14 @@ def cropImages():
                         img = cv2.imread(file.path)
                         height, width,_ = img.shape
                         lbl = cv2.imread(folder.path + "/labels/" + file.name,0)
-                        if width == 1080:
+                        if height == 1080:
                             cv2.imwrite('INPUT/image-'+str(i)+'.jpg',img)
                             cv2.imwrite('LABEL/image-'+str(i)+'.jpg',lbl)
                             i +=1
                         else:
                             for j in range(0,841,105): # 9 crops
-                                imgres = img[:,j:1080+j]
-                                lblres = lbl[:,j:1080+j]
+                                imgres = img[j:1080+j,:]
+                                lblres = lbl[j:1080+j,:]
                                 cv2.imwrite('INPUT/image-'+str(i)+'.jpg',imgres)
                                 cv2.imwrite('LABEL/image-'+str(i)+'.jpg',lblres)
                                 i +=1

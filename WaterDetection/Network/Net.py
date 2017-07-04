@@ -93,25 +93,29 @@ class Network:
 	def train(self,reps=10000):
 		print("number of iterations",reps)
 		# tf.add_to_collection('superpixels',self.output)
-		script.clearFolder('FloorDetectionNN/Dataset/PAINTED-IMAGES')
+		script.clearFolder('WaterDetection/Dataset/PAINTED-IMAGES')
 		# loss function
 		# print(self.output.get_shape())
-		MSE = tf.reduce_mean(tf.square(self.y - self.output))
+		MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.output - self.y) * 100, 0)))
 		# cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y * tf.log(self.output), reduction_indices=[1]))
 		# loss = cross_entropy
 		loss = MSE
-		train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+		# loss = tf.reduce_mean(tf.losses.mean_squared_error(self.y, self.output, self.weights))
+
+		train_step = tf.train.AdamOptimizer(1e-3).minimize(loss)
 
 		init = tf.global_variables_initializer()
-		
+
 		saver = tf.train.Saver(write_version=tf.train.SaverDef.V2)
 		# Creating session and initilizing variables
 		lossFunc = list()
+		# Counter for the early stop
+		metricsThresCounter = 0
 		with tf.Session() as sess:
 			print("Creating Session...")
-			# sess.run(init)
-			saver.restore(sess,'FloorDetectionNN/Network/Model/model')
-			print("Model restored.")
+			sess.run(init)
+			# saver.restore(sess,'WaterDetection/Network/Model/model')
+			# print("Model restored.")
 			lstt = tf.trainable_variables()
 			[print (lt.get_shape()) for lt in lstt]
 			acum = 0
@@ -127,37 +131,47 @@ class Network:
 				batch = self.dataset.train.next_batch(50)
 				normBatch = np.array([img/255 for img in batch[0]])
 				labelBatch = [lbl for lbl in batch[1]]
-				# print('batch has been read')
 				if i%10 == 0:
 					loss_value = loss.eval(feed_dict={self.x:normBatch, self.y:labelBatch, self.keep_prob:1.0})
 					# cross_entropy = loss.eval(feed_dict={self.x:normBatch, self.y:labelBatch, self.keep_prob:1.0})
 					lossFunc.append(loss_value)
+					# lossFunc.append(cross_entropy)
 					print("iter %d, mean square error %g"%(i, loss_value))
-					# print("iter %d, Cross Entropy %g"%(i, cross_entropy))
+					#print("iter %d, Cosine distance %g"%(i, cross_entropy))
 				if i>0 and i%100==0:
 					saver.save(
 							sess,
-							'FloorDetectionNN/Network/Model/model')
-					results = sess.run(self.output,feed_dict={self.x:normBatch, self.y: labelBatch, self.keep_prob:1.0})
+							'WaterDetection/Network/Model/model')
+					validationBatch = self.dataset.validation.next_batch(50)
+					validationNormBatch = np.array([img/255 for img in validationBatch[0]])
+					validationLabelBatch = [lbl for lbl in validationBatch[1]]
+					results = sess.run(self.output,feed_dict={self.x:validationNormBatch, self.y: validationLabelBatch, self.keep_prob:1.0})
 					print("Parcial Results")
-					acc,prec,rec = calculateMetrics(labelBatch,results)
+					acc,prec,rec = calculateMetrics(validationLabelBatch,results)
 					print('Accuracy',acc)
 					print('Precision',prec)
 					print('Recall',rec)
 					print("Parcial Results")
-					np.save('FloorDetectionNN/Dataset/Results/input',batch[0])
-					np.save('FloorDetectionNN/Dataset/Results/GT',batch[1])
-					np.save('FloorDetectionNN/Dataset/Results/output',results)
+					np.save('WaterDetection/Dataset/Results/input',batch[0])
+					np.save('WaterDetection/Dataset/Results/GT',batch[1])
+					np.save('WaterDetection/Dataset/Results/output',results)
 					# np.save('FloorDetectionNN/Dataset/Results/lossFunc',lossFunc)
 					paintBatchThread = myThread(batch[0],results).start()
+					#if (acc >= 0.9):
+					#	metricsThresCounter += 1
+					#	if (metricsThresCounter >= 20):
+					#		break
+					#else:
+					#	metricsThresCounter = 0
 				train_step.run(feed_dict={self.x:normBatch,self.y:labelBatch, self.keep_prob:0.5})
 				end = time.time()
 				print('iter',i, 'took',(end - start),'segs')
 			self.freeze_graph_model(sess)
+			saver.save(sess, 'WaterDetection/Network/Model/model')
 			# np.save('FloorDetection/Dataset/Results/lossFunc',lossFunc) 
 
 	def evaluate(self):
-		saver = tf.train.import_meta_graph('FloorDetectionNN/Network/Model/model.meta')
+		saver = tf.train.import_meta_graph('WaterDetection/Network/Model/model.meta')
 		g = tf.get_default_graph()
 		x = g.get_tensor_by_name("input_images:0")
 		y = g.get_tensor_by_name("label_images:0")
@@ -165,7 +179,7 @@ class Network:
 		output = g.get_tensor_by_name("superpixels:0")
 		with tf.Session() as sess:
 			while True:
-				saver.restore(sess,'FloorDetectionNN/Network/Model/model')
+				saver.restore(sess,'WaterDetection/Network/Model/model')
 				print("Model restored.")
 				# Evaluating testing set
 				metrics = []
