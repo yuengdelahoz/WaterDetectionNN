@@ -17,7 +17,7 @@ def detectEdgesCanny():
     for file in os.scandir('INPUT/'):
         if file.name.endswith('.jpg'):
             img = cv2.imread(file.path)
-            edgeimg = cv2.Canny(img, 50, 80)
+            edgeimg = cv2.Canny(img, 40, 60)
             cv2.imwrite('EDGES/'+file.name,edgeimg)
             print('Edge detection finished for',file.name)
 

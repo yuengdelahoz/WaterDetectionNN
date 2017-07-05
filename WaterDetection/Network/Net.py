@@ -16,14 +16,14 @@ class Network:
 		self.dataset = inputData.readDataSets()
 	
 	def initialize(self):
-		self.x = tf.placeholder(tf.float32, shape =[None,500,500,3],name='input_images')
+		self.x = tf.placeholder(tf.float32, shape =[None,500,500,4],name='input_images')
 		self.y = tf.placeholder(tf.float32, shape = [None,1250],name='label_images')
 		self.keep_prob = tf.placeholder(tf.float32,name='keep_prob')
 
 	def topology1(self):# apparently too big to handle. It gets an error saying input tensor shape too big
 		print('Topology 1')
 		# number of parameters =
-		L1 = Layer().Dense([500*500*3,1250],tf.reshape(self.x,[-1,500*500*3]),internal=True)
+		L1 = Layer().Dense([500*500*4,1250],tf.reshape(self.x,[-1,500*500*3]),internal=True)
 		self.output = L1.output
 
 	def topology2(self): # 5 layers, 4 conv and one fully connected
@@ -39,7 +39,7 @@ class Network:
 	def topology3(self): # 5 layers, 4 conv and one fully connected
 		print('Topology 3')
 		# number of parameters = 3847015
-		L1 = Layer().Convolutional([4,4,3,3],self.x)# L1.output.shape = [?,250,250,7]
+		L1 = Layer().Convolutional([4,4,4,3],self.x)# L1.output.shape = [?,250,250,7]
 		L2 = Layer().Convolutional([18,18,3,3],L1.output)# L2.output.shape = [?,125,250,10]
 		L3 = Layer().Convolutional([20,20,3,2],L2.output)# L3.output.shape = [?,63,125,7]
 		L4 = Layer().Convolutional([7,7,2,3],L3.output) # L4.output.shape = [?,32,63,3]
@@ -62,7 +62,7 @@ class Network:
 	def topology5(self): # 5 layers, 4 conv and one fully connected
 		# number of parameters = 8650169
 		print('Topology 5')
-		L1 = Layer().Convolutional([4,4,3,3],self.x,k_pool=1) # output.shape = [?,500,500,3]
+		L1 = Layer().Convolutional([4,4,4,3],self.x,k_pool=1) # output.shape = [?,500,500,3]
 		L2 = Layer().Convolutional([5,5,3,2],L1.output,k_pool=1)# output.shape = [?,500,500,2]
 		L3 = Layer().Convolutional([6,6,2,4],L2.output,k_pool=1)# output.shape = [?,500,500,3]
 		L4 = Layer().Convolutional([7,7,4,3],L3.output) # output.shape = [?,250,250,3]
@@ -96,7 +96,7 @@ class Network:
 		script.clearFolder('WaterDetection/Dataset/PAINTED-IMAGES')
 		# loss function
 		# print(self.output.get_shape())
-		MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.output - self.y) * 100, 0)))
+		MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.y - self.output) * 15, 0)))
 		# cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y * tf.log(self.output), reduction_indices=[1]))
 		# loss = cross_entropy
 		loss = MSE
@@ -156,7 +156,7 @@ class Network:
 					np.save('WaterDetection/Dataset/Results/GT',batch[1])
 					np.save('WaterDetection/Dataset/Results/output',results)
 					# np.save('FloorDetectionNN/Dataset/Results/lossFunc',lossFunc)
-					paintBatchThread = myThread(batch[0],results).start()
+					paintBatchThread = myThread(validationBatch[0],results).start()
 					#if (acc >= 0.9):
 					#	metricsThresCounter += 1
 					#	if (metricsThresCounter >= 20):

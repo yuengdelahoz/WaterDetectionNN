@@ -35,8 +35,13 @@ class Dataset:
 			if img.endswith('.jpg'):
 				name,ext = img.split('.')
 				image = cv2.imread(self.path+'/INPUT/'+img)
+				height, width, channels = image.shape
+				edgeImg = cv2.imread(self.path+'/EDGES/'+img,cv2.IMREAD_GRAYSCALE)
+				inputImage = np.empty((width, height, channels+1), dtype=np.uint8)
+				inputImage[:,:,0:3] = image
+				inputImage[:,:,3] = edgeImg
 				label = np.load(self.path + '/LABEL-SUP/'+name+'.npy')
-				imagesBatch.append(image)
+				imagesBatch.append(inputImage)
 				labelsBatch.append(label)
 		return np.array((imagesBatch,labelsBatch))
 
