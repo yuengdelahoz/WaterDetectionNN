@@ -36,7 +36,7 @@ class Dataset:
 				name,ext = img.split('.')
 				image = cv2.imread(self.path+'/INPUT/'+img)
 				height, width, channels = image.shape
-				edgeImg = cv2.imread(self.path+'/EDGES/'+img,cv2.IMREAD_GRAYSCALE)
+				edgeImg = cv2.imread(self.path+'/EDGES/'+img,cv2.IMREAD_GRAYSCALE)*255
 				inputImage = np.empty((width, height, channels+1), dtype=np.uint8)
 				inputImage[:,:,0:3] = image
 				inputImage[:,:,3] = edgeImg

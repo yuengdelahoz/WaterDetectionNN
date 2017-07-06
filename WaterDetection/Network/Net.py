@@ -39,10 +39,10 @@ class Network:
 	def topology3(self): # 5 layers, 4 conv and one fully connected
 		print('Topology 3')
 		# number of parameters = 3847015
-		L1 = Layer().Convolutional([4,4,4,3],self.x)# L1.output.shape = [?,250,250,7]
-		L2 = Layer().Convolutional([18,18,3,3],L1.output)# L2.output.shape = [?,125,250,10]
-		L3 = Layer().Convolutional([20,20,3,2],L2.output)# L3.output.shape = [?,63,125,7]
-		L4 = Layer().Convolutional([7,7,2,3],L3.output) # L4.output.shape = [?,32,63,3]
+		L1 = Layer().Convolutional([4,4,4,4],self.x)# L1.output.shape = [?,250,250,7]
+		L2 = Layer().Convolutional([18,18,4,4],L1.output)# L2.output.shape = [?,125,250,10]
+		L3 = Layer().Convolutional([20,20,4,3],L2.output)# L3.output.shape = [?,63,125,7]
+		L4 = Layer().Convolutional([7,7,3,3],L3.output) # L4.output.shape = [?,32,63,3]
 		L_out = Layer(act_func='sigmoid').Dense([32*32*3,1250],tf.reshape(L4.output,[-1,32*32*3]))
 		self.output = L_out.output
 
@@ -62,7 +62,7 @@ class Network:
 	def topology5(self): # 5 layers, 4 conv and one fully connected
 		# number of parameters = 8650169
 		print('Topology 5')
-		L1 = Layer().Convolutional([4,4,4,3],self.x,k_pool=1) # output.shape = [?,500,500,3]
+		L1 = Layer().Convolutional([4,4,3,3],self.x,k_pool=1) # output.shape = [?,500,500,3]
 		L2 = Layer().Convolutional([5,5,3,2],L1.output,k_pool=1)# output.shape = [?,500,500,2]
 		L3 = Layer().Convolutional([6,6,2,4],L2.output,k_pool=1)# output.shape = [?,500,500,3]
 		L4 = Layer().Convolutional([7,7,4,3],L3.output) # output.shape = [?,250,250,3]
@@ -96,13 +96,13 @@ class Network:
 		script.clearFolder('WaterDetection/Dataset/PAINTED-IMAGES')
 		# loss function
 		# print(self.output.get_shape())
-		MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.y - self.output) * 15, 0)))
+		MSE = tf.reduce_mean(tf.square(self.y - self.output)) # + tf.maximum((self.y - self.output) * 1.5, 0)))
 		# cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y * tf.log(self.output), reduction_indices=[1]))
 		# loss = cross_entropy
 		loss = MSE
 		# loss = tf.reduce_mean(tf.losses.mean_squared_error(self.y, self.output, self.weights))
 
-		train_step = tf.train.AdamOptimizer(1e-3).minimize(loss)
+		train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
 		init = tf.global_variables_initializer()
 
@@ -146,14 +146,15 @@ class Network:
 					validationNormBatch = np.array([img/255 for img in validationBatch[0]])
 					validationLabelBatch = [lbl for lbl in validationBatch[1]]
 					results = sess.run(self.output,feed_dict={self.x:validationNormBatch, self.y: validationLabelBatch, self.keep_prob:1.0})
+					print(results)
 					print("Parcial Results")
 					acc,prec,rec = calculateMetrics(validationLabelBatch,results)
 					print('Accuracy',acc)
 					print('Precision',prec)
 					print('Recall',rec)
 					print("Parcial Results")
-					np.save('WaterDetection/Dataset/Results/input',batch[0])
-					np.save('WaterDetection/Dataset/Results/GT',batch[1])
+					np.save('WaterDetection/Dataset/Results/input',validationBatch[0])
+					np.save('WaterDetection/Dataset/Results/GT',validationBatch[1])
 					np.save('WaterDetection/Dataset/Results/output',results)
 					# np.save('FloorDetectionNN/Dataset/Results/lossFunc',lossFunc)
 					paintBatchThread = myThread(validationBatch[0],results).start()
