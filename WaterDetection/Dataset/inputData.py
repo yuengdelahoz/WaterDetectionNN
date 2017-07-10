@@ -35,8 +35,9 @@ class Dataset:
 			if img.endswith('.jpg'):
 				name,ext = img.split('.')
 				image = cv2.imread(self.path+'/INPUT/'+img)
+				# We read the image obtained with the edge detection function and add that to our input, so input has dimensions 500x500x4 (RGB + edge image)
 				height, width, channels = image.shape
-				edgeImg = cv2.imread(self.path+'/EDGES/'+img,cv2.IMREAD_GRAYSCALE)*255
+				edgeImg = cv2.imread(self.path+'/EDGES/'+img,cv2.IMREAD_GRAYSCALE)*255 # We want 0 and 255 because the other RGB layers work with these values and the train function normalizes the whole input set
 				inputImage = np.empty((width, height, channels+1), dtype=np.uint8)
 				inputImage[:,:,0:3] = image
 				inputImage[:,:,3] = edgeImg
@@ -80,6 +81,7 @@ def createNPYfiles():
     num_Of_Pics = len(instances)
     idx = int(num_Of_Pics*0.7)
 
+	# 70% training data, 30% other. 1/6 of 30% validation data and the rest testing data. In the end, 70% training data, 25% testing data and 5% validation data
     trainingImages = instances[0:idx]
     testingImages = instances[idx:]
     idx = int(len(testingImages)*(1.0/6.0))

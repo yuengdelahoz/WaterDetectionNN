@@ -49,9 +49,9 @@ class Network:
 	def topology4(self): # 5 layers, 4 conv and one fully connected
 		print('Topology 4')
 		# number of parameters = 8649011
-		L1 = Layer().Convolutional([4,4,3,3],self.x)# L1.output.shape = [?,250,500,7]
-		L2 = Layer().Convolutional([5,5,3,2],L1.output)# L2.output.shape = [?,125,500,10]
-		L3 = Layer().Convolutional([6,6,2,4],L2.output,k_pool=1)# L3.output.shape = [?,125,500,7]
+		L1 = Layer().Convolutional([4,4,4,4],self.x)# L1.output.shape = [?,250,500,7]
+		L2 = Layer().Convolutional([5,5,4,3],L1.output)# L2.output.shape = [?,125,500,10]
+		L3 = Layer().Convolutional([6,6,3,4],L2.output,k_pool=1)# L3.output.shape = [?,125,500,7]
 		L4 = Layer().Convolutional([7,7,4,3],L3.output) # L4.output.shape = [?,63,500,3]
 		L5 = Layer().Convolutional([8,8,3,3],L4.output) # L5.output.shape = [?,32,32,3]
 		L_drop = Layer().Dropout(L5.output,self.keep_prob)
@@ -62,9 +62,9 @@ class Network:
 	def topology5(self): # 5 layers, 4 conv and one fully connected
 		# number of parameters = 8650169
 		print('Topology 5')
-		L1 = Layer().Convolutional([4,4,3,3],self.x,k_pool=1) # output.shape = [?,500,500,3]
-		L2 = Layer().Convolutional([5,5,3,2],L1.output,k_pool=1)# output.shape = [?,500,500,2]
-		L3 = Layer().Convolutional([6,6,2,4],L2.output,k_pool=1)# output.shape = [?,500,500,3]
+		L1 = Layer().Convolutional([4,4,4,4],self.x,k_pool=1) # output.shape = [?,500,500,3]
+		L2 = Layer().Convolutional([5,5,4,3],L1.output,k_pool=1)# output.shape = [?,500,500,2]
+		L3 = Layer().Convolutional([6,6,3,4],L2.output,k_pool=1)# output.shape = [?,500,500,3]
 		L4 = Layer().Convolutional([7,7,4,3],L3.output) # output.shape = [?,250,250,3]
 		L5 = Layer().Convolutional([8,8,3,3],L4.output) # output.shape = [?,125,125,3]
 		L6 = Layer().Convolutional([9,9,3,2],L5.output) # output.shape = [?,63,63,3]
@@ -72,6 +72,25 @@ class Network:
 		L_drop = Layer().Dropout(L7.output,self.keep_prob)
 		LFC = Layer().Dense([32*32*3,2000],tf.reshape(L_drop.output,[-1,32*32*3]),internal=True)
 		L_out = Layer(act_func='sigmoid').Dense([2000,1250],LFC.output,internal=True)
+		self.output = L_out.output
+
+	def topology6(self): # 15 layers, 14 convolutionals and one fully connected
+		print('Topology 6')
+		L1 = Layer().Convolutional([4,4,4,4],self.x,k_pool=1) #output.shape = [?,500,500,4]
+		L2 = Layer().Convolutional([5,5,4,4],L1.output,k_pool=1) #output.shape = [?,500,500,4]
+		L3 = Layer().Convolutional([6,6,4,4],L2.output,k_pool=1) #output.shape = [?,500,500,4]
+		L4 = Layer().Convolutional([7,7,4,4],L3.output,k_pool=1) #output.shape = [?,500,500,4]
+		L5 = Layer().Convolutional([8,8,4,4],L4.output,k_pool=1) #output.shape = [?,500,500,4]
+		L6 = Layer().Convolutional([9,9,4,4],L5.output,k_pool=1) #output.shape = [?,500,500,4]
+		L7 = Layer().Convolutional([10,10,4,4],L6.output,k_pool=1) #output.shape = [?,500,500,4]
+		L8 = Layer().Convolutional([11,11,4,4],L7.output,k_pool=1) #output.shape = [?,500,500,4]
+		L9 = Layer().Convolutional([12,12,4,4],L8.output,k_pool=1) #output.shape = [?,500,500,4]
+		L10 = Layer().Convolutional([13,13,4,4],L9.output,k_pool=1) #output.shape = [?,500,500,4]
+		L11 = Layer().Convolutional([14,14,4,4],L10.output) #output.shape = [?,250,250,4]
+		L12 = Layer().Convolutional([15,15,4,4],L11.output) #output.shape = [?,125,125,4]
+		L13 = Layer().Convolutional([16,16,4,4],L12.output) #output.shape = [?,63,63,4]
+		L14 = Layer().Convolutional([17,17,4,3],L13.output) #output.shape ? [?,32,32,3]
+		L_out = Layer(act_func='sigmoid').Dense([32*32*3,1250],tf.reshape(L14.output,[-1,32*32*3]))
 		self.output = L_out.output
 
 	def freeze_graph_model(self,session, g = tf.get_default_graph()):
@@ -96,13 +115,13 @@ class Network:
 		script.clearFolder('WaterDetection/Dataset/PAINTED-IMAGES')
 		# loss function
 		# print(self.output.get_shape())
-		MSE = tf.reduce_mean(tf.square(self.y - self.output)) # + tf.maximum((self.y - self.output) * 1.5, 0)))
+		MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.y - self.output) * 5, 0))) #Added higher weight penalties to the false negatives
 		# cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y * tf.log(self.output), reduction_indices=[1]))
 		# loss = cross_entropy
 		loss = MSE
 		# loss = tf.reduce_mean(tf.losses.mean_squared_error(self.y, self.output, self.weights))
 
-		train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+		train_step = tf.train.AdamOptimizer(2e-3).minimize(loss)
 
 		init = tf.global_variables_initializer()
 

@@ -12,6 +12,7 @@ def clearFolder(path):
         if jpg_file.name.endswith('.jpg')!=-1:
             os.remove(jpg_file.path)
 
+# It reads the input images and detects edges in the images using the Canny edge detector with a minValue threshold of 40 and a maxValue threshold of 60
 def detectEdgesCanny():
     clearFolder('EDGES')
     for file in os.scandir('INPUT/'):
@@ -21,6 +22,7 @@ def detectEdgesCanny():
             cv2.imwrite('EDGES/'+file.name,edgeimg)
             print('Edge detection finished for',file.name)
 
+# It reads the input images and detects edges in the images using the Laplacian edge detector with a kernel size of 3
 def detectEdgesLaplacian():
     clearFolder('EDGES')
     for file in os.scandir('INPUT/'):
