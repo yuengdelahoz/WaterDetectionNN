@@ -43,7 +43,7 @@ class Network:
 		L2 = Layer().Convolutional([18,18,4,4],L1.output)# L2.output.shape = [?,125,250,10]
 		L3 = Layer().Convolutional([20,20,4,3],L2.output)# L3.output.shape = [?,63,125,7]
 		L4 = Layer().Convolutional([7,7,3,3],L3.output) # L4.output.shape = [?,32,63,3]
-		L_out = Layer(act_func='sigmoid').Dense([32*32*3,1250],tf.reshape(L4.output,[-1,32*32*3]))
+		L_out = Layer(act_func='sigmoid',output_flag=True).Dense([32*32*3,1250],tf.reshape(L4.output,[-1,32*32*3]),internal=True)
 		self.output = L_out.output
 
 	def topology4(self): # 5 layers, 4 conv and one fully connected
@@ -75,6 +75,7 @@ class Network:
 		self.output = L_out.output
 
 	def topology6(self): # 15 layers, 14 convolutionals and one fully connected
+		# 3,868,485 parameters
 		print('Topology 6')
 		L1 = Layer().Convolutional([4,4,4,4],self.x,k_pool=1) #output.shape = [?,500,500,4]
 		L2 = Layer().Convolutional([5,5,4,4],L1.output,k_pool=1) #output.shape = [?,500,500,4]
@@ -198,18 +199,20 @@ class Network:
 		keep_prob = g.get_tensor_by_name("keep_prob:0")
 		output = g.get_tensor_by_name("superpixels:0")
 		with tf.Session() as sess:
-			while True:
-				saver.restore(sess,'WaterDetection/Network/Model/model')
-				print("Model restored.")
-				# Evaluating testing set
-				metrics = []
-				for  i in range (self.dataset.test.num_of_images//50):
-					batch = self.dataset.test.next_batch(50)
-					testImages = np.array([img/255 for img in batch[0]])
-					testLabels = [lbl for lbl in batch[1]]
-					results = sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0})
-					met = calculateMetrics(testLabels,results)
-					print ('iter',i,'Metrics',met)
-					metrics.append(met)
-				metrics = np.mean(metrics,axis=0)
-				print('Accuracy: {0}, Precision: {1}, Recall {2}'.format(metrics[0],metrics[1],metrics[2]))
+			saver.restore(sess,'WaterDetection/Network/Model/model')
+			print("Model restored.")
+			# Evaluating testing set
+			metrics = []
+			# The testing dataset contains 9,135 images. In order to create the confusion matrix, we only want to execute the evaluation once on a 
+			# batch containing all the images in the testing dataset. The metrics will be the mean over all the images in the testing dataset as well
+			for  i in range (self.dataset.test.num_of_images//9135):
+				batch = self.dataset.test.next_batch(9135)
+				testImages = np.array([img/255 for img in batch[0]])
+				testLabels = [lbl for lbl in batch[1]]
+				results = sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0})
+				met = calculateMetrics(testLabels,results)
+				print ('iter',i,'Metrics',met)
+				metrics.append(met)
+				paintBatchThread = myThread(batch[0],results).start()
+			metrics = np.mean(metrics,axis=0)
+			print('Accuracy: {0}, Precision: {1}, Recall {2}'.format(metrics[0],metrics[1],metrics[2]))
