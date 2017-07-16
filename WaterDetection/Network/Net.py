@@ -203,10 +203,11 @@ class Network:
 			print("Model restored.")
 			# Evaluating testing set
 			metrics = []
+			print('Evaluation batch size:',self.dataset.test.num_of_images)
 			# The testing dataset contains 9,135 images. In order to create the confusion matrix, we only want to execute the evaluation once on a 
 			# batch containing all the images in the testing dataset. The metrics will be the mean over all the images in the testing dataset as well
-			for  i in range (self.dataset.test.num_of_images//9135):
-				batch = self.dataset.test.next_batch(9135)
+			for  i in range (self.dataset.test.num_of_images//self.dataset.test.num_of_images):
+				batch = self.dataset.test.next_batch(self.dataset.test.num_of_images)
 				testImages = np.array([img/255 for img in batch[0]])
 				testLabels = [lbl for lbl in batch[1]]
 				results = sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0})
