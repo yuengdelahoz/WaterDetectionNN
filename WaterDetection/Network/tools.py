@@ -27,7 +27,7 @@ def paintBatch():
 		pimg = script.paintOrig(supImg,img)
 		cv2.imwrite(path+'/../Dataset/PAINTED-IMAGES/image'+str(i)+".jpg",pimg)
 
-def calculateMetrics(GroundTruthBatch, OutputBatch):
+def calculateMetrics(GroundTruthBatch, OutputBatch, Debug = False):
 	''' This method calculates Accuracy, Precision, and Recall
 		Relevant items = Superpixels that represent Objects on the floor
 		TP = True Positive - Superpixels that were correctly classified as part of the object
@@ -43,6 +43,10 @@ def calculateMetrics(GroundTruthBatch, OutputBatch):
 	Accuracy = []
 	Precision = []
 	Recall = []
+	TotalTP = 0
+	TotalTN = 0
+	TotalFP = 0
+	TotalFN = 0
 
 	NetOutputBatch = [np.round(sup) for sup in OutputBatch]
 
@@ -60,7 +64,12 @@ def calculateMetrics(GroundTruthBatch, OutputBatch):
 				FP += 1
 			elif v == 2:
 				FN +=1
-		print ('TP',TP,'TN',TN,'FP',FP,'FN',FN)
+		if Debug:
+			print ('TP',TP,'TN',TN,'FP',FP,'FN',FN)
+		TotalTN = TotalTN + TN
+		TotalTP = TotalTP + TP
+		TotalFP = TotalFP + FP
+		TotalFN = TotalFN + FN
 		acc = (TP + TN)/(TP + TN + FP +FN)
 		if TP + FP !=0:
 			prec = TP/(TP + FP)
@@ -69,4 +78,7 @@ def calculateMetrics(GroundTruthBatch, OutputBatch):
 			rec = TP/(TP + FN)
 			Recall.append(rec)
 		Accuracy.append(acc)
-	return np.mean(Accuracy),np.mean(Precision),np.mean(Recall)
+	# The method returns the average accuracy, precision and recall measures over all the images of the
+	# batch, as well as the total number of TP, TN, FP, FN taking into account all the images (sum of individual
+	# measures of each image)
+	return np.mean(Accuracy),np.mean(Precision),np.mean(Recall),TotalTP,TotalTN,TotalFP,TotalFN

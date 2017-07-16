@@ -19,9 +19,9 @@ class Dataset:
 
 		start = self.index
 		self.index += batch_size
-
 		if self.index > self.num_of_images:
 			# Shuffle the data
+			print('Shuffling data')
 			np.random.shuffle(self.instances)
 			self.index = batch_size
 			start = 0

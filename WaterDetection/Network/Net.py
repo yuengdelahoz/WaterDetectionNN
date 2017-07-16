@@ -168,7 +168,7 @@ class Network:
 					results = sess.run(self.output,feed_dict={self.x:validationNormBatch, self.y: validationLabelBatch, self.keep_prob:1.0})
 					print(results)
 					print("Parcial Results")
-					acc,prec,rec = calculateMetrics(validationLabelBatch,results)
+					acc,prec,rec,tp,tn,fp,fn = calculateMetrics(validationLabelBatch,results)
 					print('Accuracy',acc)
 					print('Precision',prec)
 					print('Recall',rec)
@@ -191,7 +191,7 @@ class Network:
 			saver.save(sess, 'WaterDetection/Network/Model/model')
 			# np.save('FloorDetection/Dataset/Results/lossFunc',lossFunc) 
 
-	def evaluate(self):
+	def evaluate(self,batch_size):
 		saver = tf.train.import_meta_graph('WaterDetection/Network/Model/model.meta')
 		g = tf.get_default_graph()
 		x = g.get_tensor_by_name("input_images:0")
@@ -203,17 +203,26 @@ class Network:
 			print("Model restored.")
 			# Evaluating testing set
 			metrics = []
-			print('Evaluation batch size:',self.dataset.test.num_of_images)
-			# The testing dataset contains 9,135 images. In order to create the confusion matrix, we only want to execute the evaluation once on a 
-			# batch containing all the images in the testing dataset. The metrics will be the mean over all the images in the testing dataset as well
-			for  i in range (self.dataset.test.num_of_images//self.dataset.test.num_of_images):
-				batch = self.dataset.test.next_batch(self.dataset.test.num_of_images)
+			confusionMatrix = []
+			# The testing dataset contains 9,135 images. In order to create the confusion matrix, we execute the evaluation with a 
+			# batch size that is a divisor of the total number of images (9,135) so that no shuffling is performed and no image is 
+			# evaluated multiple times. We evaluate each image in the testing dataset once and only once.
+			# The accuracy, precision and recall metrics will be the mean over all the images in the testing dataset. The TP, TN, FP, FN are
+			# the sum of each TP, TN, FP, FN from every single image.
+			for  i in range (self.dataset.test.num_of_images//batch_size):
+				batch = self.dataset.test.next_batch(batch_size)
 				testImages = np.array([img/255 for img in batch[0]])
 				testLabels = [lbl for lbl in batch[1]]
 				results = sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0})
-				met = calculateMetrics(testLabels,results)
-				print ('iter',i,'Metrics',met)
+				acc,prec,rec,tp,tn,fp,fn = calculateMetrics(testLabels,results)
+				met = [acc,prec,rec]
+				confMat = [tp,tn,fp,fn]
+				print ('iter',i,'Metrics',met,'Conf Mat:',confMat)
+				print ('iter',i,'Number of images:',batch[0].shape)
 				metrics.append(met)
+				confusionMatrix.append(confMat)
 				paintBatchThread = myThread(batch[0],results).start()
 			metrics = np.mean(metrics,axis=0)
+			confusionMatrix = np.sum(confusionMatrix,axis=0)
 			print('Accuracy: {0}, Precision: {1}, Recall {2}'.format(metrics[0],metrics[1],metrics[2]))
+			print('Confusion Matrix: TP {0}, TN {1}, FP {2}, FN {3}'.format(confusionMatrix[0],confusionMatrix[1],confusionMatrix[2],confusionMatrix[3]))
