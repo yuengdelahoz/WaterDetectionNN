@@ -20,12 +20,15 @@ def paintBatch():
 	folder = os.listdir(path+'/../Dataset/Results/')
 	supImages = np.load(path+'/../Dataset/Results/output.npy')
 	images = np.load(path+'/../Dataset/Results/input.npy')
+	names = np.load(path+'/../Dataset/Results/imagenames.npy') #Contains the original names of the images so that we can track the input, 
+	# label, edge and floor images associated with the eval image painted
 	print('Painting images in the batch')
+	script.clearFolder(path+'/../Dataset/PAINTED-IMAGES')
 	for i in range(len(images)):
 		supImg = supImages[i]
 		img = images[i]
 		pimg = script.paintOrig(supImg,img)
-		cv2.imwrite(path+'/../Dataset/PAINTED-IMAGES/image'+str(i)+".jpg",pimg)
+		cv2.imwrite(path+'/../Dataset/PAINTED-IMAGES/'+names[i],pimg)
 
 def calculateMetrics(GroundTruthBatch, OutputBatch, Debug = False):
 	''' This method calculates Accuracy, Precision, and Recall
@@ -64,8 +67,7 @@ def calculateMetrics(GroundTruthBatch, OutputBatch, Debug = False):
 				FP += 1
 			elif v == 2:
 				FN +=1
-		if Debug:
-			print ('TP',TP,'TN',TN,'FP',FP,'FN',FN)
+		print ('TP',TP,'TN',TN,'FP',FP,'FN',FN)
 		TotalTN = TotalTN + TN
 		TotalTP = TotalTP + TP
 		TotalFP = TotalFP + FP

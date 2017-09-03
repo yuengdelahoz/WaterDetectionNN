@@ -5,12 +5,35 @@ from wand.image import Image
 from random import shuffle
 import sys
 import time
+import zerorpc
+import pickle
+import base64
+from shutil import copyfile
 
 def clearFolder(path):
     print('Clearing',path)
     for jpg_file in os.scandir(path):
         if jpg_file.name.endswith('.jpg')!=-1:
             os.remove(jpg_file.path)
+
+# This method collects all the input, label, edges, floor and eval images involved in the evaluation of the model.
+# It iterates over all the images painted in the eval method and collects all the other images with the same name.
+# It helps to avoid copying all the files manually.
+def collectImages():
+    clearFolder('COLLECT_EVAL/INPUT')
+    clearFolder('COLLECT_EVAL/LABEL')
+    clearFolder('COLLECT_EVAL/EDGES')
+    clearFolder('COLLECT_EVAL/FLOOR')
+    clearFolder('COLLECT_EVAL/EVAL')
+    counter = 0
+    for file in os.scandir('PAINTED-IMAGES'):
+        copyfile('INPUT/'+file.name,'COLLECT_EVAL/INPUT/'+file.name)
+        copyfile('LABEL/'+file.name,'COLLECT_EVAL/LABEL/'+file.name)
+        copyfile('EDGES/'+file.name,'COLLECT_EVAL/EDGES/'+file.name)
+        copyfile('FLOOR/'+file.name,'COLLECT_EVAL/FLOOR/'+file.name)
+        copyfile('PAINTED-IMAGES/'+file.name,'COLLECT_EVAL/EVAL/'+file.name)
+        print('iter',counter)
+        counter += 1
 
 # It reads the input images and detects edges in the images using the Canny edge detector with a minValue threshold of 40 and a maxValue threshold of 60
 def detectEdgesCanny():
@@ -132,3 +155,25 @@ def paintImages():
             cv2.imwrite('PAINTED-IMAGES/'+img.name,pimg)
             print(img.name, 'iter', i)
             i +=1
+
+# This method creates all the floor images that will be passed to the water detection model as additional input.
+# It's a client that connects to the floor detection RPC server (in this case, it was running in address 127.0.0.1:4242
+# The server returns the floor detection model output painted over the original image. In option 1, the floor detection model 
+# will return a black and white image with the floor output. In option 2, the floor detection model will return the 
+# original image with the parts not classified as "floor" painted in black.
+def createFloorDetectionImages():
+	clearFolder('FLOOR')
+	i = 0
+	client = zerorpc.Client()
+	client.connect('tcp://127.0.0.1:4242')
+	for img in os.scandir('INPUT'):
+		if img.name.endswith('.jpg'):
+			origImg = cv2.imread(img.path)
+			origImgSerialized = pickle.dumps(origImg,protocol=0)
+			res = client.run_inference_on_image(origImgSerialized)
+			resImg = base64.b64decode(res)
+			with open('FLOOR/'+img.name, 'wb') as file:
+				file.write(resImg)
+			print(img.name, 'iter',i)
+			i += 1
+	print('Done')

@@ -16,7 +16,10 @@ class Network:
 		self.dataset = inputData.readDataSets()
 	
 	def initialize(self):
-		self.x = tf.placeholder(tf.float32, shape =[None,500,500,4],name='input_images')
+		# Shape is ?x500x500x5 because input images have width and height = 500, and input has 5 dimensions: 3 from the RGB image (R,G,B channels) + edge image + floor image
+		# In the case of water detection/floor detection integration option 2, where the input image is the original image with parts not classified as floor by the floor 
+		# detection model painted black, the shape would be ?x500x500x4: 3 from RGB + edge image.
+		self.x = tf.placeholder(tf.float32, shape =[None,500,500,5],name='input_images')
 		self.y = tf.placeholder(tf.float32, shape = [None,1250],name='label_images')
 		self.keep_prob = tf.placeholder(tf.float32,name='keep_prob')
 
@@ -39,10 +42,10 @@ class Network:
 	def topology3(self): # 5 layers, 4 conv and one fully connected
 		print('Topology 3')
 		# number of parameters = 3847015
-		L1 = Layer().Convolutional([4,4,4,4],self.x)# L1.output.shape = [?,250,250,7]
-		L2 = Layer().Convolutional([18,18,4,4],L1.output)# L2.output.shape = [?,125,250,10]
-		L3 = Layer().Convolutional([20,20,4,3],L2.output)# L3.output.shape = [?,63,125,7]
-		L4 = Layer().Convolutional([7,7,3,3],L3.output) # L4.output.shape = [?,32,63,3]
+		L1 = Layer().Convolutional([4,4,5,5],self.x)# L1.output.shape = [?,250,250,7]
+		L2 = Layer().Convolutional([18,18,5,4],L1.output)# L2.output.shape = [?,125,250,10]
+		L3 = Layer().Convolutional([20,20,4,4],L2.output)# L3.output.shape = [?,63,125,7]
+		L4 = Layer().Convolutional([7,7,4,3],L3.output) # L4.output.shape = [?,32,63,3]
 		L_out = Layer(act_func='sigmoid',output_flag=True).Dense([32*32*3,1250],tf.reshape(L4.output,[-1,32*32*3]),internal=True)
 		self.output = L_out.output
 
@@ -122,7 +125,7 @@ class Network:
 		loss = MSE
 		# loss = tf.reduce_mean(tf.losses.mean_squared_error(self.y, self.output, self.weights))
 
-		train_step = tf.train.AdamOptimizer(2e-3).minimize(loss)
+		train_step = tf.train.AdamOptimizer(1e-3).minimize(loss)
 
 		init = tf.global_variables_initializer()
 
@@ -148,7 +151,7 @@ class Network:
 			jj = 0
 			for i in range(reps):
 				start = time.time()
-				batch = self.dataset.train.next_batch(50)
+				batch,imgNames = self.dataset.train.next_batch(50)
 				normBatch = np.array([img/255 for img in batch[0]])
 				labelBatch = [lbl for lbl in batch[1]]
 				if i%10 == 0:
@@ -162,20 +165,21 @@ class Network:
 					saver.save(
 							sess,
 							'WaterDetection/Network/Model/model')
-					validationBatch = self.dataset.validation.next_batch(50)
+					validationBatch,valImgNames = self.dataset.validation.next_batch(50)
 					validationNormBatch = np.array([img/255 for img in validationBatch[0]])
 					validationLabelBatch = [lbl for lbl in validationBatch[1]]
+					origValidInputImages = [val[:,:,0:3] for val in validationBatch[0]]
 					results = sess.run(self.output,feed_dict={self.x:validationNormBatch, self.y: validationLabelBatch, self.keep_prob:1.0})
-					print(results)
 					print("Parcial Results")
 					acc,prec,rec,tp,tn,fp,fn = calculateMetrics(validationLabelBatch,results)
 					print('Accuracy',acc)
 					print('Precision',prec)
 					print('Recall',rec)
 					print("Parcial Results")
-					np.save('WaterDetection/Dataset/Results/input',validationBatch[0])
+					np.save('WaterDetection/Dataset/Results/input',origValidInputImages)
 					np.save('WaterDetection/Dataset/Results/GT',validationBatch[1])
 					np.save('WaterDetection/Dataset/Results/output',results)
+					np.save('WaterDetection/Dataset/Results/imagenames',valImgNames)
 					# np.save('FloorDetectionNN/Dataset/Results/lossFunc',lossFunc)
 					paintBatchThread = myThread(validationBatch[0],results).start()
 					#if (acc >= 0.9):
@@ -209,8 +213,9 @@ class Network:
 			# evaluated multiple times. We evaluate each image in the testing dataset once and only once.
 			# The accuracy, precision and recall metrics will be the mean over all the images in the testing dataset. The TP, TN, FP, FN are
 			# the sum of each TP, TN, FP, FN from every single image.
+			print('Eval dataset size:',self.dataset.test.num_of_images)
 			for  i in range (self.dataset.test.num_of_images//batch_size):
-				batch = self.dataset.test.next_batch(batch_size)
+				batch,imgNames = self.dataset.test.next_batch(batch_size)
 				testImages = np.array([img/255 for img in batch[0]])
 				testLabels = [lbl for lbl in batch[1]]
 				results = sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0})
@@ -221,8 +226,68 @@ class Network:
 				print ('iter',i,'Number of images:',batch[0].shape)
 				metrics.append(met)
 				confusionMatrix.append(confMat)
+				origValidInputImages = [bt[:,:,0:3] for bt in batch[0]]
+				np.save('WaterDetection/Dataset/Results/input',origValidInputImages)
+				np.save('WaterDetection/Dataset/Results/GT',batch[1])
+				np.save('WaterDetection/Dataset/Results/output',results)
+				np.save('WaterDetection/Dataset/Results/imagenames',imgNames)
 				paintBatchThread = myThread(batch[0],results).start()
 			metrics = np.mean(metrics,axis=0)
 			confusionMatrix = np.sum(confusionMatrix,axis=0)
 			print('Accuracy: {0}, Precision: {1}, Recall {2}'.format(metrics[0],metrics[1],metrics[2]))
 			print('Confusion Matrix: TP {0}, TN {1}, FP {2}, FN {3}'.format(confusionMatrix[0],confusionMatrix[1],confusionMatrix[2],confusionMatrix[3]))
+
+	# This method is the same as the evaluation method, but in this case there is no meta or checkpoint data and the graph is loaded only from the frozen .pb model file.
+	def evaluateFrozenModel(self,batch_size):
+		with tf.gfile.GFile('/home/raulreu/WaterDetectionNN/examples/model.pb', "rb") as f:
+			graph_def = tf.GraphDef()
+			graph_def.ParseFromString(f.read())
+		with tf.Graph().as_default() as self.g:
+			tf.import_graph_def(
+				graph_def, 
+				input_map=None, 
+				return_elements=None, 
+				name="prefix", 
+				op_dict=None, 
+				producer_op_list=None
+			)
+		print('Model loaded')
+		x = self.g.get_tensor_by_name("prefix/input_images:0")
+		keep_prob = self.g.get_tensor_by_name("prefix/keep_prob:0")
+		output= self.g.get_tensor_by_name("prefix/superpixels:0")
+		with tf.Session(graph=self.g) as sess:
+                        print("Model restored.")
+                        # Evaluating testing set
+                        metrics = []
+                        confusionMatrix = []
+                        # The testing dataset contains 9,135 images. In order to create the confusion matrix, we execute the evaluation with a
+                        # batch size that is a divisor of the total number of images (9,135) so that no shuffling is performed and no image is
+                        # evaluated multiple times. We evaluate each image in the testing dataset once and only once.
+                        # The accuracy, precision and recall metrics will be the mean over all the images in the testing dataset. The TP, TN, FP, FN are
+                        # the sum of each TP, TN, FP, FN from every single image.
+                        print('Eval dataset size:',self.dataset.test.num_of_images)
+                        for  i in range (self.dataset.test.num_of_images//batch_size):
+                                batch,imgNames = self.dataset.test.next_batch(batch_size)
+                                testImages = np.array([img/255 for img in batch[0]])
+                                testLabels = [lbl for lbl in batch[1]]
+                                results = sess.run(output,feed_dict={x:testImages,keep_prob:1.0})
+                                acc,prec,rec,tp,tn,fp,fn = calculateMetrics(testLabels,results)
+                                met = [acc,prec,rec]
+                                confMat = [tp,tn,fp,fn]
+                                print ('iter',i,'Metrics',met,'Conf Mat:',confMat)
+                                print ('iter',i,'Number of images:',batch[0].shape)
+                                metrics.append(met)
+                                confusionMatrix.append(confMat)
+                                origValidInputImages = [bt[:,:,0:3] for bt in batch[0]]
+                                np.save('WaterDetection/Dataset/Results/input',origValidInputImages)
+                                np.save('WaterDetection/Dataset/Results/GT',batch[1])
+                                np.save('WaterDetection/Dataset/Results/output',results)
+                                np.save('WaterDetection/Dataset/Results/imagenames',imgNames)
+                                paintBatchThread = myThread(batch[0],results).start()
+                        metrics = np.mean(metrics,axis=0)
+                        confusionMatrix = np.sum(confusionMatrix,axis=0)
+                        print('Accuracy: {0}, Precision: {1}, Recall {2}'.format(metrics[0],metrics[1],metrics[2]))
+                        print('Confusion Matrix: TP {0}, TN {1}, FP {2}, FN {3}'.format(confusionMatrix[0],confusionMatrix[1],confusionMatrix[2],confusionMatrix[3]))
+
+
+
