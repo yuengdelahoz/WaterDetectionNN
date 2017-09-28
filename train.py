@@ -4,5 +4,5 @@ from WaterDetection.Network.Net import Network
 
 n = Network()
 n.initialize()
-n.topology3()
+n.topology4()
 n.train()

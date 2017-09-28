@@ -19,7 +19,8 @@ class NeuralNetRPC(object):
 		self.f_pref = "prefix_floor"
 		self.f = self.load_graph('floor_model.pb',self.f_pref)
 		self.w_pref = "prefix_water"
-		self.w = self.load_graph('water_model_opt2.pb',self.w_pref)
+		# self.w = self.load_graph('v2_water_model_op1.pb',self.w_pref)
+		self.w = self.load_graph('v2_water_model_op2.pb',self.w_pref)
 		print("Graph loaded.","Server ready")
 
 	def load_graph(self,frozen_graph_filename,model_prefix):
@@ -40,7 +41,8 @@ class NeuralNetRPC(object):
 				op_dict=None, 
 				producer_op_list=None
 			)
-		return g
+			targetGraph = g
+		return targetGraph
 
 	def paintOrigFloor(self,supimgVector,img):
                 """Iterate over original image (color) and paint black the superpixels that were not classified as 'floor' by the floor detection model"""
@@ -80,32 +82,35 @@ class NeuralNetRPC(object):
                 log_device_placement=False)
 
 		input_image = pickle.loads(img_bytes)
-		image = np.array(input_image,ndmin=4)
+		image = np.array(input_image/255,ndmin=4)
 		img = np.array(input_image,ndmin=3)
 
 		# Run inference on the image using the floor detection model
 		xf = self.f.get_tensor_by_name(self.f_pref + "/input_images:0")
 		keep_probf = self.f.get_tensor_by_name(self.f_pref+"/keep_prob:0")
-		outputf= self.f.get_tensor_by_name(self.f_pref+"/superpixels:0")
+		outputf = self.f.get_tensor_by_name(self.f_pref+"/superpixels:0")
 		with tf.Session(graph=self.f, config=session_conf) as sess:
 			floorini = time.time()
 			result = sess.run(outputf,feed_dict={xf:image,keep_probf:1.0})
 			floorend = time.time()
-		#	floorImg = self.paintFloor(result.ravel()) #This line only makes sense when using water detection/floor detection integration option 1: return black and white
+			#floorImg = self.paintFloor(result.ravel()) #This line only makes sense when using water detection/floor detection integration option 1: return black and white
 		# image with the floor model output
 			floorImg = self.paintOrigFloor(result.ravel(),img)
 
 		# Compute the edge gradient image
-		edgeimg = cv2.Laplacian(img, cv2.CV_32F, ksize = 3)
+		ein = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+		edgeimg = cv2.Laplacian(ein, cv2.CV_8U, ksize = 3)
 		height,width,channels = img.shape
-		#waterInputImg = np.empty((width,height,5),dtype=np.uint8) #This line only makes sense when using the water detection/floor detection
+		# waterInputImg = np.empty((width,height,5),dtype=np.uint8) #This line only makes sense when using the water detection/floor detection
 		# integration option 1: input is original RGB image + edge image + black and white floor detection output
 		waterInputImg = np.empty((width,height,4),dtype=np.uint8) #This line only makes sense when using the water detection/floor detection
 		# integration option 2: input is RGB floor detection image with 'not floor' obscured + edge image
+		#waterInputImg[:,:,0:3] = img
 		waterInputImg[:,:,0:3] = floorImg
-		waterInputImg[:,:,3] = cv2.cvtColor(edgeimg, cv2.COLOR_BGR2GRAY)
-		#waterInputImg[:,:,4] = floorImg
+		waterInputImg[:,:,3] = edgeimg
+		# waterInputImg[:,:,4] = floorImg
 		# Run inference using the water detection model
+		waterInputImg = waterInputImg/255.0;
 		xw = self.w.get_tensor_by_name(self.w_pref+"/input_images:0")
 		keep_probw = self.w.get_tensor_by_name(self.w_pref+"/keep_prob:0")
 		outputw = self.w.get_tensor_by_name(self.w_pref+"/superpixels:0")
@@ -116,7 +121,7 @@ class NeuralNetRPC(object):
 			painted = paintOrig(result.ravel(),img)
 			encoded = cv2.imencode(".jpg",painted)[1]
 			str_image = base64.b64encode(encoded)
-			#cv2.imwrite('out.jpg',painted)
+			cv2.imwrite('out.jpg',painted)
 		tend = time.time()
 		floortime = floorend-floorini
 		watertime = waterend-waterini

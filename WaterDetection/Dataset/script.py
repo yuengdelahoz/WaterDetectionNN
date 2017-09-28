@@ -9,6 +9,8 @@ import zerorpc
 import pickle
 import base64
 from shutil import copyfile
+import tensorflow as tf
+from google.protobuf import text_format
 
 def clearFolder(path):
     print('Clearing',path)
@@ -177,3 +179,54 @@ def createFloorDetectionImages():
 			print(img.name, 'iter',i)
 			i += 1
 	print('Done')
+
+def createTextFrozenModel():
+        saver = tf.train.import_meta_graph('WaterDetection/Network/Model/model.meta')
+        g = tf.get_default_graph()
+        with tf.Session() as session:
+                saver.restore(session,'WaterDetection/Network/Model/model')
+                graph_def_original = g.as_graph_def();
+                for vari in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES):
+                        print(vari.name, session.run(vari))
+                # freezing model = converting variables to constants
+                #graph_def_simplified = tf.graph_util.convert_variables_to_constants(
+                #                sess = session,
+                #                input_graph_def = graph_def_original,
+                #                output_node_names =['input_images','keep_prob','superpixels'])
+                #saving frozen graph to disk
+                #model_path = tf.train.write_graph(
+                #                graph_or_graph_def = graph_def_simplified,
+                #                logdir = 'examples',
+                #                name = 'textmodel.pb',
+                #                as_text=True)
+                #with tf.gfile.GFile('/home/raulreu/WaterDetectionNN/examples/modelserialized.pb', "wb") as f:
+                #        f.write(graph_def_simplified.SerializeToString())
+                #print("Model saved in file: %s" % model_path)
+
+def printVariablesFromFrozenModel():
+	with tf.gfile.GFile('/home/raulreu/WaterDetectionNN/examples/model.pb', "rb") as f:
+		#graph_def = tf.GraphDef()
+		#proto_b = f.read()
+		#text_format.Merge(proto_b,graph_def)
+		graph_def = tf.GraphDef()
+		graph_def.ParseFromString(f.read())
+	with tf.Graph().as_default() as g:
+		tf.import_graph_def(
+			graph_def, 
+			input_map=None, 
+			return_elements=None, 
+			name="prefix", 
+			op_dict=None, 
+			producer_op_list=None
+		)
+	with tf.Session(graph=g) as session:
+		graph_def_or = g.as_graph_def()
+		for vari in tf.global_variables():
+			print(vari.name)
+			tf.Print(g.get_tensor_by_name(vari.name))
+		print('Nodes')
+		for n in graph_def_or.node:
+			if n.op == 'Const':
+				print(n.name)
+				print(session.run(g.get_tensor_by_name(n.name+":0")))
+	print('Model loaded')

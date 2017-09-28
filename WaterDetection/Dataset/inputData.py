@@ -35,23 +35,23 @@ class Dataset:
 		for img in imgs:
 			if img.endswith('.jpg'):
 				name,ext = img.split('.')
-				image = cv2.imread(self.path+'/INPUT/'+img)
+				#image = cv2.imread(self.path+'/INPUT/'+img)
 				# In water detection/floor detection integration: option 2, where the input image is the original image where parts not classified as 
 				# floor are painted in black, we take as input image the result of the floor detection model.
-				# image = cv2.imread(self.path+'/FLOOR/'+img)
+				image = cv2.imread(self.path+'/FLOOR/'+img)
 
 				# We read the image obtained with the edge detection function and add that to our input
 				height, width, channels = image.shape
-				edgeImg = cv2.imread(self.path+'/EDGES/'+img,cv2.IMREAD_GRAYSCALE)*255 # We want 0 and 255 because the other RGB layers work with these values and the train function normalizes the whole input set
+				edgeImg = cv2.imread(self.path+'/EDGES/'+img,cv2.IMREAD_GRAYSCALE) # We want 0 and 255 because the other RGB layers work with these values and the train function normalizes the whole input set
 				
 				# In water detection/floor detection integration: option 1, where the input image is the original image and we add the edge detection and the 
 				# floor detection black and white output as additional dimensions. In option 2, the following line should be commented.
-				floorImg = cv2.imread(self.path+'/FLOOR/'+img,cv2.IMREAD_GRAYSCALE)
+				#floorImg = cv2.imread(self.path+'/FLOOR/'+img,cv2.IMREAD_GRAYSCALE)
 
 				inputImage = np.empty((width, height, channels+1), dtype=np.uint8)
 				inputImage[:,:,0:3] = image
 				inputImage[:,:,3] = edgeImg
-				inputImage[:,:,4] = floorImg #This line only makes sense in water/floor detection integration: option 1.
+				#inputImage[:,:,4] = floorImg #This line only makes sense in water/floor detection integration: option 1.
 				label = np.load(self.path + '/LABEL-SUP/'+name+'.npy')
 				imagesBatch.append(inputImage)
 				labelsBatch.append(label)
@@ -79,6 +79,7 @@ def readDataSets():
     np.random.shuffle(trainingImages)
     testingImages = np.load(path + '/npyFiles/testingImages.npy')
     np.random.shuffle(testingImages)
+    #testingImages = ['image-1340.jpg','image-84.jpg','image-1436.jpg','image-3826.jpg','image-9812.jpg']
     validationImages = np.load(path + '/npyFiles/validationImages.npy')
     np.random.shuffle(validationImages)
     train = Dataset(trainingImages,'Training set')

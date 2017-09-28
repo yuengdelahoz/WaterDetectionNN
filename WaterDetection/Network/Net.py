@@ -19,7 +19,7 @@ class Network:
 		# Shape is ?x500x500x5 because input images have width and height = 500, and input has 5 dimensions: 3 from the RGB image (R,G,B channels) + edge image + floor image
 		# In the case of water detection/floor detection integration option 2, where the input image is the original image with parts not classified as floor by the floor 
 		# detection model painted black, the shape would be ?x500x500x4: 3 from RGB + edge image.
-		self.x = tf.placeholder(tf.float32, shape =[None,500,500,5],name='input_images')
+		self.x = tf.placeholder(tf.float32, shape =[None,500,500,4],name='input_images')
 		self.y = tf.placeholder(tf.float32, shape = [None,1250],name='label_images')
 		self.keep_prob = tf.placeholder(tf.float32,name='keep_prob')
 
