@@ -1,0 +1,15 @@
+**/*.png
+**/*.npy
+**/*.jpg
+**/*.zip
+Dataset/Images.zip
+Dataset/*.zip
+models.zip
+**/*.swp
+**/*.pyc
+**/*.DS_Store
+Models/
+Painted_Images/
+.project
+ObjectOnFloorDetectionNN/
+.pydevproject
