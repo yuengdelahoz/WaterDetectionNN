@@ -137,7 +137,7 @@ class DataHandler:
 		return True
 	
 	def __get_response(self):
-		id = '0B1o5TXfk1CeEdEhyUktTNkMzbVE'
+		id = '0B1o5TXfk1CeENG1PLU1WMkdnTzg'
 		URL = "https://drive.google.com/uc?export=download"
 		session = requests.Session()
 		response = session.get(URL, params = { 'id' : id }, stream = True)
