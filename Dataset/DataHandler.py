@@ -50,7 +50,7 @@ class Dataset():
 class DataHandler:
 	def __init__(self):
 		self.path = os.path.dirname(os.path.relpath(__file__))
-		self.DATA_SIZE = 1728698851
+		self.DATA_SIZE = 4692378290
 
 	def build_datasets(self):
 		images_path = self.path + '/Images'
@@ -137,7 +137,7 @@ class DataHandler:
 		return True
 	
 	def __get_response(self):
-		id = '0B1o5TXfk1CeENG1PLU1WMkdnTzg'
+		id = '0B1o5TXfk1CeEY21zallLOW9YN2M'
 		URL = "https://drive.google.com/uc?export=download"
 		session = requests.Session()
 		response = session.get(URL, params = { 'id' : id }, stream = True)
