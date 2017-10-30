@@ -120,10 +120,10 @@ class Network:
 				lstd = ta.as_list()
 				mult = functools.reduce(operator.mul, lstd, 1)
 				acum = acum + mult
-			print('Number of parameters',acum)
+			print('Number of parameters',acum) # number of trainable parameters
 
 			comp_iters = sess.run(completed_iterations)
-			utils.create_folder('Models/'+self.name,clear_if_exists = not (comp_iters >0))
+			utils.create_folder('Models/'+self.name,clear_if_exists = not (comp_iters >0)) # clear Model folder if training has never taken place
 			remaining_iterations = iterations - comp_iters
 			print('Remaining Iterations:', remaining_iterations, '- Completed Iterations: ',comp_iters)
 			init_time = time.time()
@@ -140,11 +140,11 @@ class Network:
 
 				train_step.run(feed_dict={self.x:normBatch,self.y:labelBatch, self.keep_prob:0.5})
 				if i%100==0 or i==remaining_iterations-1:
-					update = comp_iters + (i+1)
-					print('updating completed iterations:',sess.run(completed_iterations.assign(update)))
-
 					MSE = loss.eval(feed_dict={self.x:normBatch, self.y:labelBatch, self.keep_prob:1.0})
 					print("iter {}, mean square error {}, step duration -> {:.2f} secs, time since last saved -> {:.2f} secs".format(i, MSE,(time.time()-start),time.time()-last_saved_time))
+
+					update = comp_iters + (i+1)
+					print('updating completed iterations:',sess.run(completed_iterations.assign(update)))
 
 					save_path = saver.save(sess,'Models/'+self.name+'/model')
 					print("Model saved in file: %s" % save_path)
