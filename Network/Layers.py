@@ -7,6 +7,7 @@ class Layer():
 		self.act_func = act_func
 		
 	def Dense(self,shape,x,output=False):
+		self.type = 'Dense'
 		self.Weights = self.W_init(shape)
 		# Weights.shape = [in_neurons,out_neurons] = [?,1720*1720] in output layer
 		self.Biases = self.B_init([shape[-1]])
@@ -23,6 +24,7 @@ class Layer():
 		return self
 
 	def Convolutional(self,shape,x,strides=1,k_pool=2):
+		self.type = 'Convolutional'
 		# x.shape = [batch,in_height,in_width,in_channels] = [?,240,240,3]
 		self.Weights = self.W_init(shape)
 		# Weights.shape = [filter_height, filter_width, in_channels,out_channels]
