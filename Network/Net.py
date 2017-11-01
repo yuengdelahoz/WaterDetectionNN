@@ -9,6 +9,7 @@ import operator
 import functools
 import cv2
 import os
+from pprint import pprint
 
 class Network:
 	def __init__(self):
@@ -29,19 +30,24 @@ class Network:
 			self.topology4()
 		elif topology == 'topology_05':
 			self.topology5()
+		print('\n'+self.name)
 
 	def topology1(self):# apparently too big to handle. It gets an error saying input tensor shape too big
 		self.name = 'topology_01'
-		print(self.name)
 		# number of parameters =
 		L1 = Layer().Convolutional([5,5,3,3],self.x)# L1.output.shape = [?,120,120,3]
 		L_drop = Layer().Dropout(L1.output,self.keep_prob)
 		L_out = Layer(act_func = 'sigmoid').Dense([120*120*3,900],tf.reshape(L_drop.output,[-1,120*120*3]),output=True)
 		self.output = L_out.output
 
+		# This is just for the README File
+		self.layers = dict()
+		self.layers.update({'L1':L1.__dict__})
+		self.layers.update({'L2':L_drop.__dict__})
+		self.layers.update({'L_out':L_out.__dict__})
+
 	def topology2(self): # 5 layers, 4 conv and one fully connected
 		self.name = 'topology_02'
-		print(self.name)
 		# number of parameters = 19,949,944
 		L1 = Layer(act_func = 'tanh').Convolutional([4,4,3,7],self.x,k_pool=1)# L1.output.shape = [?,500,500,7]
 		L2 = Layer(act_func = 'tanh').Convolutional([5,5,7,4],L1.output)# L2.output.shape = [?,120,250,10]
@@ -51,9 +57,17 @@ class Network:
 		L_out = Layer(act_func = 'sigmoid').Dense([30*30*3,900],tf.reshape(L_drop.output,[-1,30*30*3]),output=True)
 		self.output = L_out.output
 
+		# This is just for the README File
+		self.layers = dict()
+		self.layers.update({'L1':L1.__dict__})
+		self.layers.update({'L2':L2.__dict__})
+		self.layers.update({'L3':L3.__dict__})
+		self.layers.update({'L4':L4.__dict__})
+		self.layers.update({'L5':L_drop.__dict__})
+		self.layers.update({'L_out':L_out.__dict__})
+
 	def topology3(self): # 5 layers, 4 conv and one fully connected
 		self.name = 'topology_03'
-		print(self.name)
 		# number of parameters = 3847015
 		L1 = Layer().Convolutional([4,4,3,3],self.x)# L1.output.shape = [?,120,120,3]
 		L2 = Layer().Convolutional([5,5,3,3],L1.output)# L2.output.shape = [?,60,60,3]
@@ -62,10 +76,17 @@ class Network:
 		L_out = Layer(act_func='sigmoid').Dense([30*30*2,900],tf.reshape(L_drop.output,[-1,30*30*2]),output=True)
 		self.output = L_out.output
 
+		# This is just for the README File
+		self.layers = dict()
+		self.layers.update({'L1':L1.__dict__})
+		self.layers.update({'L2':L2.__dict__})
+		self.layers.update({'L3':L3.__dict__})
+		self.layers.update({'L4':L_drop.__dict__})
+		self.layers.update({'L_out':L_out.__dict__})
+
 	def topology4(self): # 5 layers, 4 conv and one fully connected
 		# number of parameters = 8649011
 		self.name = 'topology_04'
-		print(self.name)
 		L1 = Layer().Convolutional([4,4,3,3],self.x)# L1.output.shape = [?,120,500,7]
 		L2 = Layer().Convolutional([5,5,3,2],L1.output)# L2.output.shape = [?,60,500,10]
 		L3 = Layer().Convolutional([6,6,2,4],L2.output,k_pool=1)# L3.output.shape = [?,60,500,7]
@@ -75,10 +96,19 @@ class Network:
 		L_out = Layer(act_func='sigmoid').Dense([30*30*3,900],tf.reshape(L_drop.output,[-1,30*30*3]),output=True)
 		self.output = L_out.output
 
+		# This is just for the README File
+		self.layers = dict()
+		self.layers.update({'L1':L1.__dict__})
+		self.layers.update({'L2':L2.__dict__})
+		self.layers.update({'L3':L3.__dict__})
+		self.layers.update({'L4':L4.__dict__})
+		self.layers.update({'L5':L5.__dict__})
+		self.layers.update({'L6':L_drop.__dict__})
+		self.layers.update({'L_out':L_out.__dict__})
+
 	def topology5(self): # 5 layers, 4 conv and one fully connected
 		# number of parameters = 8650169
 		self.name = 'topology_05'
-		print(self.name)
 		L1 = Layer().Convolutional([10,10,3,3],self.x,k_pool=1) # output.shape = [?,240,240,3]
 		L2 = Layer().Convolutional([5,5,3,2],L1.output,k_pool=1)# output.shape = [?,240,500,2]
 		L3 = Layer().Convolutional([6,6,2,4],L2.output,k_pool=1)# output.shape = [?,240,500,3]
@@ -89,6 +119,19 @@ class Network:
 		LFC = Layer().Dense([60*60*2,3600],tf.reshape(L_drop.output,[-1,60*60*2]))
 		L_out = Layer(act_func='sigmoid').Dense([3600,900],LFC.output,output=True)
 		self.output = L_out.output
+
+		# This is just for the README File
+		self.layers = dict()
+		self.layers.update({'L1':L1.__dict__})
+		self.layers.update({'L2':L2.__dict__})
+		self.layers.update({'L3':L3.__dict__})
+		self.layers.update({'L4':L4.__dict__})
+		self.layers.update({'L5':L5.__dict__})
+		self.layers.update({'L6':L6.__dict__})
+		self.layers.update({'L7':L_drop.__dict__})
+		self.layers.update({'L8':LFC.__dict__})
+		self.layers.update({'L_out':L_out.__dict__})
+
 
 	def train(self,iterations=100000,learning_rate = 1e-04):
 		# loss function
@@ -129,7 +172,11 @@ class Network:
 			init_time = time.time()
 			last_saved_time = time.time()
 			with open('Models/'+self.name+'/README.txt','w') as f:
-				msg = "Number of parameters = {}\nNumber of iterations = {}\nLearning rate = {}\n".format(acum,(comp_iters + remaining_iterations),learning_rate)
+				f.write('Network Topology:\n')
+				for k,v in self.layers.items():
+					f.write(k + " : " + str(v) + '\n')
+
+				msg = "\nNumber of parameters = {}\nNumber of iterations = {}\nLearning rate = {}\n".format(acum,(comp_iters + remaining_iterations),learning_rate)
 				f.write(msg)
 
 			for i in range(remaining_iterations):
@@ -142,7 +189,6 @@ class Network:
 				if i%100==0 or i==remaining_iterations-1:
 					MSE = loss.eval(feed_dict={self.x:normBatch, self.y:labelBatch, self.keep_prob:1.0})
 					print("iter {}, mean square error {}, step duration -> {:.2f} secs, time since last saved -> {:.2f} secs".format(i, MSE,(time.time()-start),time.time()-last_saved_time))
-
 					update = comp_iters + (i+1)
 					print('updating completed iterations:',sess.run(completed_iterations.assign(update)))
 
@@ -168,7 +214,10 @@ class Network:
 			print('total time -> {:.2f} secs'.format(time.time()-init_time))
 		tf.reset_default_graph()
 
-	def evaluate(self,topology):
+	def evaluate(self,topology=None):
+		if topology is None:
+			topology = self.name
+
 		if not utils.is_model_stored(topology):
 			print("No model stored to be restored.")
 			return
@@ -192,9 +241,8 @@ class Network:
 				testLabels = [lbl for lbl in batch[1]]
 				results = np.round(sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0}))
 				met = utils.calculateMetrics(testLabels,results)
-				print ('iter',i,'Metrics',met)
+				print ('iter',i,'Metrics',met,end='\r')
 				metrics.append(met)
-				break
 			metrics = np.mean(metrics,axis=0)
 			eval_metrics = 'Evaluation metrics\nAccuracy: {0:.2f}, Precision: {1:.2f}, Recall {2:.2f}'.format(metrics[0],metrics[1],metrics[2])
 			print(eval_metrics)
@@ -202,6 +250,7 @@ class Network:
 				f.write(eval_metrics)
 			if results is not None:
 				utils.PainterThread(batch[0],results,output_folder='Testing').start()
+		tf.reset_default_graph()
 
 	def freeze_graph_model(self, session, g = tf.get_default_graph()):
 		graph_def_original = g.as_graph_def();
