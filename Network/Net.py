@@ -9,6 +9,7 @@ import operator
 import functools
 import cv2
 import os
+import shutil
 from pprint import pprint
 
 class Network:
@@ -244,13 +245,14 @@ class Network:
 				print ('iter',i,'Metrics',met,end='\r')
 				metrics.append(met)
 			metrics = np.mean(metrics,axis=0)
-			eval_metrics = 'Evaluation metrics\nAccuracy: {0:.2f}, Precision: {1:.2f}, Recall {2:.2f}'.format(metrics[0],metrics[1],metrics[2])
+			eval_metrics = '\nEvaluation metrics\nAccuracy: {0:.2f}, Precision: {1:.2f}, Recall {2:.2f}'.format(metrics[0],metrics[1],metrics[2])
 			print(eval_metrics)
 			with open(topology_path+'/README.txt','a') as f:
 				f.write(eval_metrics)
 			if results is not None:
 				utils.PainterThread(batch[0],results,output_folder='Testing').start()
 		tf.reset_default_graph()
+		shutil.copyfile('Dataset/dataset.pickle',topology_path+'dataset.pickle')
 
 	def freeze_graph_model(self, session, g = tf.get_default_graph()):
 		graph_def_original = g.as_graph_def();
