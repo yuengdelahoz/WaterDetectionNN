@@ -13,10 +13,11 @@ import pickle
 Datasets = collections.namedtuple('Datasets', ['training', 'testing','validation'])
 
 class Dataset():
-	def __init__(self,images):
+	def __init__(self,images, gt = 'superlabel'):
 		self.instances = images
 		self.num_of_images = len(images)
 		self.images_path = os.path.dirname(__file__)+'/Images' 
+		self.ground_truth = gt
 		self.index = 0
 
 	def next_batch(self, batch_size):
@@ -40,7 +41,7 @@ class Dataset():
 			if img.endswith('.png'):
 				try:
 					image = cv2.imread(self.images_path+'/input/'+img)
-					label = np.load(self.images_path+'/superlabel/'+img.replace('png','npy'))
+					label = np.load(self.images_path+'/'+self.ground_truth+'/'+img.replace('png','npy'))
 				except:
 					continue
 				imagesBatch.append(image)

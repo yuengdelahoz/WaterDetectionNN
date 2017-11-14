@@ -14,6 +14,7 @@ import numpy as np
 from collections import namedtuple
 import threading
 import cv2
+import shutil
 
 def clear_folder(name):
 	if os.path.isdir(name):
@@ -307,6 +308,22 @@ def is_model_stored(top):
 	except:
 		return False
 
+def generate_new_binary_dataset_for_objects_on_the_floor():
+	ipath = create_folder('Dataset/Images3/input/')
+	lpath = create_folder('Dataset/Images3/label/')
+	for npy in os.scandir('Dataset/Images/superlabel'):
+		if npy.name.endswith('.npy'):
+			shutil.copy('Dataset/Images/input/'+npy.name.replace('npy','png'),ipath+npy.name.replace('npy','png'))
+			sp = np.load(npy.path)
+			if sum(sp) > 0:
+				label = [1,0]
+			else:
+				label = [0,1]
+			np.save(lpath+npy.name,label)
+			sys.stdout.write("\033[K")
+			print('generating new label for',npy.name,end='\r')
+	print('\nDone')
+
 if __name__ == '__main__':
-	createSuperLabels()
+	generate_new_binary_dataset_for_objects_on_the_floor()
 

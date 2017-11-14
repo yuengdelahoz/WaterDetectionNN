@@ -15,7 +15,9 @@ from pprint import pprint
 class Network:
 	def __init__(self):
 		# Read Dataset
-		self.dataset = DataHandler().build_datasets()
+		print('Network')
+		self.dataset = None
+		self.name = None
 	
 	def initialize(self,topology):
 		self.x = tf.placeholder(tf.float32, shape =[None,240,240,3],name='input_images')
@@ -135,9 +137,12 @@ class Network:
 
 
 	def train(self,iterations=100000,learning_rate = 1e-04):
+		# reading dataset
+		if self.dataset is None:
+			self.dataset = DataHandler().build_datasets()
 		# loss function
-		MSE = tf.reduce_mean(tf.square(self.y - self.output))
-		# MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.y - self.output) * 2, 0))) #Added higher weight penalties to the false negatives
+		# MSE = tf.reduce_mean(tf.square(self.y - self.output))
+		MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.y - self.output) * 2, 0))) #Added higher weight penalties to the false negatives
 		# cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y * tf.log(self.output), reduction_indices=[1]))
 		loss = MSE
 		train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
@@ -208,7 +213,7 @@ class Network:
 					utils.PainterThread(batch[0],results).start()
 					last_saved_time = time.time()
 
-			if remaining_iterations > 0:
+			if remaining_iterations > 0 or not os.path.exists('Models/'+self.name+'/frozen/model.pb'):
 				self.freeze_graph_model(sess)
 			else:
 				print('Nothing to be done')
@@ -218,6 +223,9 @@ class Network:
 	def evaluate(self,topology=None):
 		if topology is None:
 			topology = self.name
+
+		if self.dataset is None:
+			self.dataset = DataHandler().build_datasets()
 
 		if not utils.is_model_stored(topology):
 			print("No model stored to be restored.")
@@ -254,7 +262,28 @@ class Network:
 		tf.reset_default_graph()
 		shutil.copyfile('Dataset/dataset.pickle',topology_path+'dataset.pickle')
 
-	def freeze_graph_model(self, session, g = tf.get_default_graph()):
+	def freeze_graph_model(self, session = None, g = None , topology = None):
+		if topology is None:
+			if self.name is not None:
+				topology = self.name
+			else:
+				print('no topology was chosen')
+				return
+
+		if not utils.is_model_stored(topology):
+			print("No model stored to be restored.")
+			return
+
+		tf.reset_default_graph()
+		if g is None:
+			g = tf.get_default_graph()
+
+		if session is None:
+			session = tf.Session()
+			topology_path ='Models/{}/'.format(topology)
+			saver = tf.train.import_meta_graph(topology_path+'model.meta')
+			saver.restore(session,topology_path + 'model')
+
 		graph_def_original = g.as_graph_def();
 		# freezing model = converting variables to constants
 		graph_def_simplified = tf.graph_util.convert_variables_to_constants(
@@ -262,7 +291,7 @@ class Network:
 				input_graph_def = graph_def_original,
 				output_node_names =['input_images','keep_prob','superpixels'])
 		#saving frozen graph to disk
-		output_folder = utils.create_folder('Models/'+self.name+'/frozen')
+		output_folder = utils.create_folder('Models/'+topology+'/frozen')
 		if output_folder is not None:
 			model_path = tf.train.write_graph(
 					graph_or_graph_def = graph_def_simplified,
@@ -272,20 +301,3 @@ class Network:
 			print("Model saved in file: %s" % model_path)
 		else:
 			print('Output folder could not be created')
-
-	
-	# def run_inference_on_image(self,input_image):
-		# image = np.array(input_image,ndmin=4)
-		# saver = tf.train.import_meta_graph('Models/model.meta')
-		# g = tf.get_default_graph()
-		# x = g.get_tensor_by_name("input_images:0")
-		# keep_prob = g.get_tensor_by_name("keep_prob:0")
-		# output = tf.get_collection("output")[0]
-		# with tf.Session() as sess:
-			# saver.restore(sess,'Models/model')
-			# result = sess.run(output,feed_dict={x:image,keep_prob:1.0})
-			# print (result)
-			# paintedImg = utils.paintOrig(result.ravel(),input_image)
-			# return paintedImg
-
-
