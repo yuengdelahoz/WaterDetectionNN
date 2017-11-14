@@ -324,6 +324,26 @@ def generate_new_binary_dataset_for_objects_on_the_floor():
 			print('generating new label for',npy.name,end='\r')
 	print('\nDone')
 
+def paint_all_images_with_text():
+	path = create_folder('Dataset/painted_images/')
+	font = cv2.FONT_HERSHEY_SIMPLEX
+	cnt = 0
+	for img in os.scandir('Dataset/Images/input'):
+		if img.name.endswith('png'):
+			color = cv2.imread(img.path)
+			label = np.load(img.path.replace('input','label').replace('png','npy'))
+			if np.array_equal(label,[1,0]):
+				cv2.putText(color,'YES',(100,100), font, 1,(0,0,255),2,cv2.LINE_AA)
+			elif np.array_equal(label,[0,1]):
+				cv2.putText(color,'NO',(100,100), font, 1,(255,0,0),2,cv2.LINE_AA)
+			cv2.imwrite(path+img.name,color)
+			print('painting',img.name,np.array_equal(label,[1,0]),end='\r')
+			sys.stdout.write("\033[K")
+			if cnt == 100:
+				break
+			cnt +=1
+	print('Done')
+
 if __name__ == '__main__':
-	generate_new_binary_dataset_for_objects_on_the_floor()
+	paint_all_images_with_text()
 

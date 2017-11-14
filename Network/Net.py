@@ -15,13 +15,12 @@ from pprint import pprint
 class Network:
 	def __init__(self):
 		# Read Dataset
-		print('Network')
 		self.dataset = None
 		self.name = None
 	
 	def initialize(self,topology):
 		self.x = tf.placeholder(tf.float32, shape =[None,240,240,3],name='input_images')
-		self.y = tf.placeholder(tf.float32, shape = [None,900],name='label_images')
+		self.y = tf.placeholder(tf.float32, shape = [None,2],name='labels')
 		self.keep_prob = tf.placeholder(tf.float32,name='keep_prob')
 		if topology == 'topology_01':
 			self.topology1()
@@ -236,7 +235,7 @@ class Network:
 		saver = tf.train.import_meta_graph(topology_path+'model.meta')
 		g = tf.get_default_graph()
 		x = g.get_tensor_by_name("input_images:0")
-		y = g.get_tensor_by_name("label_images:0")
+		y = g.get_tensor_by_name("labels:0")
 		keep_prob = g.get_tensor_by_name("keep_prob:0")
 		output= g.get_tensor_by_name("superpixels:0")
 		with tf.Session() as sess:
