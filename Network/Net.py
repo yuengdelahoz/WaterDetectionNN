@@ -20,7 +20,7 @@ class Network:
 	
 	def initialize(self,topology):
 		self.x = tf.placeholder(tf.float32, shape =[None,240,240,3],name='input_images')
-		self.y = tf.placeholder(tf.float32, shape = [None,2],name='labels')
+		self.y = tf.placeholder(tf.float32, shape = [None,900],name='labels')
 		self.keep_prob = tf.placeholder(tf.float32,name='keep_prob')
 		if topology == 'topology_01':
 			self.topology1()
