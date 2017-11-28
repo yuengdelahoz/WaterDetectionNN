@@ -20,7 +20,7 @@ class Network:
 	
 	def initialize(self,topology):
 		self.x = tf.placeholder(tf.float32, shape =[None,240,240,3],name='input_images')
-		self.y = tf.placeholder(tf.float32, shape = [None,900],name='labels')
+		self.y = tf.placeholder(tf.float32, shape = [None,2],name='labels')
 		self.keep_prob = tf.placeholder(tf.float32,name='keep_prob')
 		if topology == 'topology_01':
 			self.topology1()
@@ -39,7 +39,7 @@ class Network:
 		# number of parameters =
 		L1 = Layer().Convolutional([5,5,3,3],self.x)# L1.output.shape = [?,120,120,3]
 		L_drop = Layer().Dropout(L1.output,self.keep_prob)
-		L_out = Layer(act_func = 'sigmoid').Dense([120*120*3,900],tf.reshape(L_drop.output,[-1,120*120*3]),output=True)
+		L_out = Layer(act_func = None).Dense([120*120*3,2],tf.reshape(L_drop.output,[-1,120*120*3]),output=True)
 		self.output = L_out.output
 
 		# This is just for the README File
@@ -51,12 +51,12 @@ class Network:
 	def topology2(self): # 5 layers, 4 conv and one fully connected
 		self.name = 'topology_02'
 		# number of parameters = 19,949,944
-		L1 = Layer(act_func = 'tanh').Convolutional([4,4,3,7],self.x,k_pool=1)# L1.output.shape = [?,500,500,7]
-		L2 = Layer(act_func = 'tanh').Convolutional([5,5,7,4],L1.output)# L2.output.shape = [?,120,250,10]
-		L3 = Layer(act_func = 'tanh').Convolutional([6,6,4,2],L2.output)# L3.output.shape = [?,60,125,7]
-		L4 = Layer(act_func = 'tanh').Convolutional([3,3,2,3],L3.output) # L4.output.shape = [?,30,63,3]
+		L1 = Layer(act_func = 'tanh').Convolutional([4,4,3,7],self.x)# L1.output.shape = [?,120,500,7]
+		L2 = Layer(act_func = 'tanh').Convolutional([5,5,7,4],L1.output)# L2.output.shape = [?,60,250,10]
+		L3 = Layer(act_func = 'tanh').Convolutional([6,6,4,2],L2.output)# L3.output.shape = [?,30,125,7]
+		L4 = Layer(act_func = 'tanh').Convolutional([3,3,2,3],L3.output) # L4.output.shape = [?,15,63,3]
 		L_drop = Layer().Dropout(L4.output,self.keep_prob)
-		L_out = Layer(act_func = 'sigmoid').Dense([30*30*3,900],tf.reshape(L_drop.output,[-1,30*30*3]),output=True)
+		L_out = Layer(act_func = None).Dense([15*15*3,2],tf.reshape(L_drop.output,[-1,15*15*3]),output=True)
 		self.output = L_out.output
 
 		# This is just for the README File
@@ -75,7 +75,7 @@ class Network:
 		L2 = Layer().Convolutional([5,5,3,3],L1.output)# L2.output.shape = [?,60,60,3]
 		L3 = Layer().Convolutional([5,5,3,2],L2.output)# L3.output.shape = [?,30,30,2]
 		L_drop = Layer().Dropout(L3.output,self.keep_prob)
-		L_out = Layer(act_func='sigmoid').Dense([30*30*2,900],tf.reshape(L_drop.output,[-1,30*30*2]),output=True)
+		L_out = Layer(act_func='sigmoid').Dense([30*30*2,2],tf.reshape(L_drop.output,[-1,30*30*2]),output=True)
 		self.output = L_out.output
 
 		# This is just for the README File
@@ -95,7 +95,7 @@ class Network:
 		L4 = Layer().Convolutional([7,7,4,3],L3.output) # L4.output.shape = [?,30,500,3]
 		L5 = Layer().Convolutional([8,8,3,3],L4.output,k_pool=1) # L5.output.shape = [?,30,32,3]
 		L_drop = Layer().Dropout(L5.output,self.keep_prob)
-		L_out = Layer(act_func='sigmoid').Dense([30*30*3,900],tf.reshape(L_drop.output,[-1,30*30*3]),output=True)
+		L_out = Layer(act_func='sigmoid').Dense([30*30*3,2],tf.reshape(L_drop.output,[-1,30*30*3]),output=True)
 		self.output = L_out.output
 
 		# This is just for the README File
@@ -119,7 +119,7 @@ class Network:
 		L6 = Layer().Convolutional([9,9,3,2],L5.output) # output.shape = [?,60,63,3]
 		L_drop = Layer().Dropout(L6.output,self.keep_prob)
 		LFC = Layer().Dense([60*60*2,3600],tf.reshape(L_drop.output,[-1,60*60*2]))
-		L_out = Layer(act_func='sigmoid').Dense([3600,900],LFC.output,output=True)
+		L_out = Layer(act_func='sigmoid').Dense([3600,2],LFC.output,output=True)
 		self.output = L_out.output
 
 		# This is just for the README File
@@ -141,9 +141,10 @@ class Network:
 			self.dataset = DataHandler().build_datasets()
 		# loss function
 		# MSE = tf.reduce_mean(tf.square(self.y - self.output))
-		MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.y - self.output) * 2, 0))) #Added higher weight penalties to the false negatives
+		# MSE = tf.reduce_mean(tf.square(self.y - self.output + tf.maximum((self.y - self.output) * 2, 0))) #Added higher weight penalties to the false negatives
 		# cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y * tf.log(self.output), reduction_indices=[1]))
-		loss = MSE
+		cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.y, logits=self.output))
+		loss = cross_entropy
 		train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 		lossFunc = list()
 
@@ -202,14 +203,20 @@ class Network:
 					batch = self.dataset.validation.next_batch(50)
 					normBatch = np.array([(img-128)/128 for img in batch[0]])
 					labelBatch = [lbl for lbl in batch[1]]
-					results = np.round(sess.run(self.output,feed_dict={self.x:normBatch, self.y: labelBatch, self.keep_prob:1.0}))
-					print("Parcial Results")
-					acc,prec,rec = utils.calculateMetrics(labelBatch,results)
-					print('Accuracy',acc)
-					print('Precision',prec)
-					print('Recall',rec)
-					print("Parcial Results")
-					utils.PainterThread(batch[0],results).start()
+
+					correct_prediction = tf.equal(tf.argmax(self.output, 1), tf.argmax(self.y, 1))
+					accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+					print('accuracy',sess.run(accuracy,feed_dict={self.x:normBatch, self.y: labelBatch, self.keep_prob:1.0}))
+
+					results = sess.run(self.output,feed_dict={self.x:normBatch, self.y: labelBatch, self.keep_prob:1.0})
+					print('results',results)
+					# print("Parcial Results")
+					# acc,prec,rec = utils.calculateMetrics(labelBatch,results)
+					# print('Accuracy',acc)
+					# print('Precision',prec)
+					# print('Recall',rec)
+					# print("Parcial Results")
+					# utils.PainterThread(batch[0],results).start()
 					last_saved_time = time.time()
 
 			if remaining_iterations > 0 or not os.path.exists('Models/'+self.name+'/frozen/model.pb'):
@@ -247,17 +254,20 @@ class Network:
 				batch = self.dataset.testing.next_batch(500)
 				testImages = np.array([(img-128)/128 for img in batch[0]])
 				testLabels = [lbl for lbl in batch[1]]
-				results = np.round(sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0}))
-				met = utils.calculateMetrics(testLabels,results)
-				print ('iter',i,'Metrics',met,end='\r')
-				metrics.append(met)
-			metrics = np.mean(metrics,axis=0)
-			eval_metrics = '\nEvaluation metrics\nAccuracy: {0:.2f}, Precision: {1:.2f}, Recall {2:.2f}'.format(metrics[0],metrics[1],metrics[2])
+				correct_prediction = tf.equal(tf.argmax(output, 1), tf.argmax(y, 1))
+				accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+				accuracy = sess.run(accuracy,feed_dict={x:testImages, y: testLabels, keep_prob:1.0})
+				# results = np.round(sess.run(output,feed_dict={x:testImages,y: testLabels,keep_prob:1.0}))
+				# met = utils.calculateMetrics(testLabels,results)
+				print ('iter',i,'accuracy ',accuracy,end='\r')
+				metrics.append(accuracy)
+			avg_accuracy = np.mean(metrics)
+			eval_metrics = '\nEvaluation metrics\nAccuracy: {0:.2f}'.format(avg_accuracy)
 			print(eval_metrics)
 			with open(topology_path+'/README.txt','a') as f:
 				f.write(eval_metrics)
-			if results is not None:
-				utils.PainterThread(batch[0],results,output_folder='Testing').start()
+			# if results is not None:
+				# utils.PainterThread(batch[0],results,output_folder='Testing').start()
 		tf.reset_default_graph()
 		shutil.copyfile('Dataset/dataset.pickle',topology_path+'dataset.pickle')
 
@@ -273,7 +283,6 @@ class Network:
 			print("No model stored to be restored.")
 			return
 
-		tf.reset_default_graph()
 		if g is None:
 			g = tf.get_default_graph()
 

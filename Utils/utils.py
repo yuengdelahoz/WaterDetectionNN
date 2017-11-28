@@ -332,7 +332,7 @@ def paint_all_images_with_text():
 		if img.name.endswith('png'):
 			color = cv2.imread(img.path)
 			label = np.load(img.path.replace('input','label').replace('png','npy'))
-			if np.array_equal(label,[1,0]):
+			if np.array_equal(labelself.output,feed_dict={self.x:normBatch, self.y: labelBatch, self.keep_prob:1.0},[1,0]):
 				cv2.putText(color,'YES',(100,100), font, 1,(0,0,255),2,cv2.LINE_AA)
 			elif np.array_equal(label,[0,1]):
 				cv2.putText(color,'NO',(100,100), font, 1,(255,0,0),2,cv2.LINE_AA)
@@ -345,5 +345,4 @@ def paint_all_images_with_text():
 	print('Done')
 
 if __name__ == '__main__':
-	paint_all_images_with_text()
 

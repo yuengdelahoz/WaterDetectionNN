@@ -66,3 +66,5 @@ class Layer():
 			return tf.sigmoid(x,name=name)
 		elif self.act_func == 'tanh':
 			return tf.tanh(x,name=name)
+		elif self.act_func == None:
+			return tf.identity(x,name=name)
