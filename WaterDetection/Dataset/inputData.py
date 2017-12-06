@@ -79,7 +79,6 @@ def readDataSets():
     np.random.shuffle(trainingImages)
     testingImages = np.load(path + '/npyFiles/testingImages.npy')
     np.random.shuffle(testingImages)
-    #testingImages = ['image-1340.jpg','image-84.jpg','image-1436.jpg','image-3826.jpg','image-9812.jpg']
     validationImages = np.load(path + '/npyFiles/validationImages.npy')
     np.random.shuffle(validationImages)
     train = Dataset(trainingImages,'Training set')

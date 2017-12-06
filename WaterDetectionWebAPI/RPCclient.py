@@ -19,19 +19,16 @@ counter = 0
 ftimes = []
 wtimes = []
 ttimes = []
-#for valImg in validationImages:
-#	img1 = cv2.imread('/home/raulreu/WaterDetectionNN/WaterDetection/Dataset/INPUT/'+valImg)
-#	img_serialized_1 = pickle.dumps(img1,protocol=0)
-#	retimg,ftime,wtime,ttime = c.run_inference_on_image(img_serialized_1)
-#	ftimes.append(ftime)
-#	wtimes.append(wtime)
-#	ttimes.append(ttime)
-#	print('It:',counter)
-#	counter += 1
-#print(time.time() - s, 'segs')
-#print('Avg floor time:',np.mean(ftimes))
-#print('Avg water time:',np.mean(wtimes))
-#print('Avg total time:',np.mean(ttimes))
-img1 = cv2.imread('image-31201.jpg')
-img_serialized_1 = pickle.dumps(img1,protocol=0)
-c.run_inference_on_image(img_serialized_1)
+for valImg in validationImages:
+	img1 = cv2.imread('/home/raulreu/WaterDetectionNN/WaterDetection/Dataset/INPUT/'+valImg)
+	img_serialized_1 = pickle.dumps(img1,protocol=0)
+	retimg,ftime,wtime,ttime = c.run_inference_on_image(img_serialized_1)
+	ftimes.append(ftime)
+	wtimes.append(wtime)
+	ttimes.append(ttime)
+	print('It:',counter)
+	counter += 1
+print(time.time() - s, 'segs')
+print('Avg floor time:',np.mean(ftimes))
+print('Avg water time:',np.mean(wtimes))
+print('Avg total time:',np.mean(ttimes))

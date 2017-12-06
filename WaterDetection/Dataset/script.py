@@ -181,6 +181,8 @@ def createFloorDetectionImages():
 	print('Done')
 
 def createTextFrozenModel():
+	# Creates a frozen model text file and prints the name and values of all the trainable variables
+	# present in the graph def from the checkpoint model to see the weights and biases
         saver = tf.train.import_meta_graph('WaterDetection/Network/Model/model.meta')
         g = tf.get_default_graph()
         with tf.Session() as session:
@@ -204,6 +206,7 @@ def createTextFrozenModel():
                 #print("Model saved in file: %s" % model_path)
 
 def printVariablesFromFrozenModel():
+	# Prints all the names and variables of the variables in the frozen graph model
 	with tf.gfile.GFile('/home/raulreu/WaterDetectionNN/examples/model.pb', "rb") as f:
 		#graph_def = tf.GraphDef()
 		#proto_b = f.read()

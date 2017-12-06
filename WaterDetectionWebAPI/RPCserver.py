@@ -19,8 +19,8 @@ class NeuralNetRPC(object):
 		self.f_pref = "prefix_floor"
 		self.f = self.load_graph('floor_model.pb',self.f_pref)
 		self.w_pref = "prefix_water"
-		# self.w = self.load_graph('v2_water_model_op1.pb',self.w_pref)
-		self.w = self.load_graph('v2_water_model_op2.pb',self.w_pref)
+		self.w = self.load_graph('v2_water_model_op1.pb',self.w_pref)
+		#self.w = self.load_graph('v2_water_model_op2.pb',self.w_pref)
 		print("Graph loaded.","Server ready")
 
 	def load_graph(self,frozen_graph_filename,model_prefix):
@@ -93,22 +93,22 @@ class NeuralNetRPC(object):
 			floorini = time.time()
 			result = sess.run(outputf,feed_dict={xf:image,keep_probf:1.0})
 			floorend = time.time()
-			#floorImg = self.paintFloor(result.ravel()) #This line only makes sense when using water detection/floor detection integration option 1: return black and white
+			floorImg = self.paintFloor(result.ravel()) #This line only makes sense when using water detection/floor detection integration option 1: return black and white
 		# image with the floor model output
-			floorImg = self.paintOrigFloor(result.ravel(),img)
+			#floorImg = self.paintOrigFloor(result.ravel(),img)
 
 		# Compute the edge gradient image
 		ein = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 		edgeimg = cv2.Laplacian(ein, cv2.CV_8U, ksize = 3)
 		height,width,channels = img.shape
-		# waterInputImg = np.empty((width,height,5),dtype=np.uint8) #This line only makes sense when using the water detection/floor detection
+		waterInputImg = np.empty((width,height,5),dtype=np.uint8) #This line only makes sense when using the water detection/floor detection
 		# integration option 1: input is original RGB image + edge image + black and white floor detection output
-		waterInputImg = np.empty((width,height,4),dtype=np.uint8) #This line only makes sense when using the water detection/floor detection
+		#waterInputImg = np.empty((width,height,4),dtype=np.uint8) #This line only makes sense when using the water detection/floor detection
 		# integration option 2: input is RGB floor detection image with 'not floor' obscured + edge image
-		#waterInputImg[:,:,0:3] = img
-		waterInputImg[:,:,0:3] = floorImg
+		waterInputImg[:,:,0:3] = img
+		#waterInputImg[:,:,0:3] = floorImg
 		waterInputImg[:,:,3] = edgeimg
-		# waterInputImg[:,:,4] = floorImg
+		waterInputImg[:,:,4] = floorImg
 		# Run inference using the water detection model
 		waterInputImg = waterInputImg/255.0;
 		xw = self.w.get_tensor_by_name(self.w_pref+"/input_images:0")
@@ -121,7 +121,7 @@ class NeuralNetRPC(object):
 			painted = paintOrig(result.ravel(),img)
 			encoded = cv2.imencode(".jpg",painted)[1]
 			str_image = base64.b64encode(encoded)
-			cv2.imwrite('out.jpg',painted)
+			#cv2.imwrite('out.jpg',painted)
 		tend = time.time()
 		floortime = floorend-floorini
 		watertime = waterend-waterini
